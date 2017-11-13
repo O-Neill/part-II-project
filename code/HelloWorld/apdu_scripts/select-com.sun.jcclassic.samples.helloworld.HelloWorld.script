@@ -1,0 +1,10 @@
+// Applet Selection APDU Script
+//
+// Package:     com.sun.jcclassic.samples.helloworld
+// Package AID: //aid/A000000062/03010C01
+// Applet:      HelloWorld
+// Applet AID:  //aid/A000000062/03010C0101
+//
+
+// Select HelloWorld applet
+0x00 0xA4 0x04 0x00 0x0A 0xA0 0x00 0x00 0x00 0x62 0x03 0x01 0x0C 0x01 0x01 0x7F;

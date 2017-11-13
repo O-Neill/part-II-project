@@ -1,0 +1,2 @@
+converter -exportpath ".\export_files;.;..\api_export_files" -classdir .\classes -applet 0xD1:0xD2:0xD3:0xD4:0xD5:0x01 com.sun.javacard.samples.HelloWorld.HelloWorld com.sun.javacard.samples.HelloWorld 0xD1:0xD2:0xD3:0xD4:0xD5 1.0
+javac -g -source 1.5 -target 1.5 -cp ".\classes;..\lib\api.jar;..\lib\installer.jar"" -d classes/ src/com/sun/javacard/samples/HelloWorld/*.java

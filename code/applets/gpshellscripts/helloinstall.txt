@@ -1,0 +1,12 @@
+mode_211
+establish_context
+card_connect
+#select -AID a000000151000000
+select -AID a000000003000000
+
+open_sc -security 1 -keyind 0 -keyver 0 -mac_key 404142434445464748494a4b4c4d4e4f -enc_key 404142434445464748494a4b4c4d4e4f
+delete -AID D1D2D3D4D501
+delete -AID D1D2D3D4D5
+install -file bin\uk\ac\cam\bo271\applets\hello\javacard\hello.cap -sdAID a000000003000000 -priv 2
+card_disconnect
+release_context

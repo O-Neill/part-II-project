@@ -1,0 +1,8 @@
+mode_211
+enable_trace
+establish_context
+card_connect
+#select -AID D1D2D3D4D501
+select -AID d1d2d3d4d5
+card_disconnect
+release_context
