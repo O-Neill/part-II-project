@@ -1,16 +1,22 @@
 # This is the application that authenticates a card
-from ecdsa import SigningKey
 import hashlib
 import struct
 from cryptography.hazmat.primitives import cmac
 from cryptography.hazmat.primitives.ciphers import algorithms
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.serialization import Encoding, \
+                                                         PrivateFormat, \
+                                                         NoEncryption, \
+                                                         PublicFormat
+
+from cryptography.hazmat.primitives.asymmetric import ec
 import asn1
 
 
 from smartcard.CardRequest import CardRequest
 
 # Later allow this to be programmed by user.
+# Represent as 8B value.
 global id_h
 id_h = 1
 
@@ -25,7 +31,7 @@ def str_to_byte_arr(arr):
 def bytes_to_num(bytearr):
     fmt = ">Q"  # big endian, 8B unsigned integer.
     arr = [int(elem, 16) for elem in bytearr]
-    print arr
+    print(arr)
     packedarr = struct.unpack(">Q", bytearray(arr))[0]
     struct.unpack(fmt, packedarr)
 
@@ -49,6 +55,7 @@ def truncate8(val):
 # shared secret.
 # See ECC based key agreement, 800-56A
 def ec_dh(privkey_host, pubkey_card):
+    # Should be stock ec_dh function to use.
     pass
 
 
@@ -71,15 +78,24 @@ def verify_mac(mac, msg, sk_cfrm):
 def extract_fields(data):
     nonce = data[:16]
     mac = data[16:32]
-    cvc = data[32:2]
+    cvc = data[32:]
     return nonce, mac, cvc
 
 
 # First action taken by card when new card conencts.
+# Returns string-format arrays
 def gen_keys():
-    d_h = SigningKey.generate()  # Uses NIST 192p by default
-    Q_h = d_h.get_verifying_key()
+    # Generate keypair using NIST P-256 curve, encoding using DER.
+    priv = ec.generate_private_key(ec.SECP256R1(), default_backend())
+    d_h = priv.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
+    pub = priv.public_key()
+    Q_h = pub.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
     return d_h, Q_h
+
+
+priv, pub = gen_keys()
+print(priv)
+print(pub)
 
 
 class client:
@@ -138,15 +154,15 @@ class client:
         # TODO: expect sw1,sw2 is success. If not, throw exception.
 
         # Gen keys, send id and host public key.
-        d_h, Q_h = gen_keys()
+        self.d_h, self.Q_h = gen_keys()
 
         # TODO: Add auth request data including ID_h (host ID) || Q_h (public key)
         auth_request = [0x80,  # CLA 80 - user defined .
-                        0x01,  # INS 01 - Auth request.
+                        0x20,  # INS 20 - Auth request.
                         0x01,  # P1  01 - length of host ID in bytes
                         0x00,  # P2  00 - unused
                         0x02,  # Total data length
-                        0x01, 0x00,  # Data - ID followed by public key
+                        0x01, 0x00,  # Data - ID followed by public key TODO
                         0x01]  # Expected return length. TODO.
 
         data, sw1, sw2 = connection.transmit(auth_request)
@@ -159,10 +175,10 @@ class client:
         id_c = truncate8(hashfun(c_c))
 
         # TODO
-        Q_c = extract_key(c_c)
+        cvc_extract(c_c)
 
         # Derive shared secret from card's public key, host private key.
-        z = ec_dh(d_h, Q_c)
+        z = ec_dh(self.d_h, self.Q_c)
 
         # zeroise d_h
         d_h = 0
