@@ -7,7 +7,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import Encoding, \
                                                          PrivateFormat, \
                                                          NoEncryption, \
-                                                         PublicFormat
+                                                         PublicFormat, \
+                                                         load_der_public_key
 
 from cryptography.hazmat.primitives.asymmetric import ec
 import asn1
@@ -21,22 +22,26 @@ global id_h
 id_h = 1
 
 
-def str_to_byte_arr(arr):
-    hexarr = [elem.encode("hex") for elem in arr]
-    intarr = [int(elem, 16) for elem in hexarr]
-    return intarr
+def kdf(z, datalen, info):
+    hashlen = 32
+    # Generate 256b hashes until required length of key material is generated.
+    iterations = (datalen / hashlen)
+    if datalen % hashlen != 0:
+        iterations = iterations + 1
+
+    hashinput = bytes([0, 0, 0, 0])
+    hashinput.extend(z)
+    hashinput.extend(info)
+    output = bytes()
+
+    for x in range(1, iterations + 1):
+        hashinput[3] = x
+        output.extend(hashfun(hashinput))
+
+    return output[0:datalen]
 
 
-# TODO: Not entirely sure if fmt should be little or big endian.
-def bytes_to_num(bytearr):
-    fmt = ">Q"  # big endian, 8B unsigned integer.
-    arr = [int(elem, 16) for elem in bytearr]
-    print(arr)
-    packedarr = struct.unpack(">Q", bytearray(arr))[0]
-    struct.unpack(fmt, packedarr)
-
-
-# SHA-256, generate 256-bit hash code as string.
+# SHA-256, input val as byte array, generate 256-bit hash code as byte array.
 def hashfun(val):
     hash_obj = hashlib.sha256()
     hash_obj.update(val)
@@ -45,9 +50,12 @@ def hashfun(val):
 
 # Extract leftmost 8 bytes of data. (input is string, likely 256 bits)
 def truncate8(val):
-    truncated_arr = str_to_byte_arr(val)[0:8]
-    bytearray(truncated_arr)
-    return struct.unpack("<Q", bytearray(truncated_arr))[0]
+    # TODO: Check length
+    return(val[0:8])
+
+
+def truncate16(val):
+    return(val[0:16])
 
 
 # Compute shared secret, Diffie-Hellman style.
@@ -56,11 +64,15 @@ def truncate8(val):
 # See ECC based key agreement, 800-56A
 def ec_dh(privkey_host, pubkey_card):
     # Should be stock ec_dh function to use.
-    pass
+    return privatekey_host.exchange(ec.ECDH(), pubkey_card)
 
 
 def concat(a, b, c, d):
-    pass
+    ret = a
+    ret.extend(b)
+    ret.extend(c)
+    ret.extend(d)
+    return ret
 
 
 # NIST 800-38B AES-128 based MAC algorithm.
@@ -87,15 +99,10 @@ def extract_fields(data):
 def gen_keys():
     # Generate keypair using NIST P-256 curve, encoding using DER.
     priv = ec.generate_private_key(ec.SECP256R1(), default_backend())
-    d_h = priv.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
+    #d_h = priv.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
     pub = priv.public_key()
-    Q_h = pub.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
-    return d_h, Q_h
-
-
-priv, pub = gen_keys()
-print(priv)
-print(pub)
+    #Q_h = pub.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+    return priv, pub
 
 
 class client:
@@ -124,10 +131,10 @@ class client:
         # self.guid = guid
 
         # Return compound type.
-        tag, pubkey_card = decoder.read()
+        tag, pubkey_der = decoder.read()
         assert tag == 72, "Expected card public key tag 72, got %d" % tag
-        # TODO: Do I need a new decoder here or does the next read() break it
-        # down?
+        # TODO: validate public key belongs to EC domain
+        self.Q_c = load_der_public_key(pubkey_der)
 
         tag, sig = decoder.read()
         assert tag == 55, "Expected digital signature tag 55, got %d" % tag
@@ -147,7 +154,7 @@ class client:
                          0xA4,  # INS A4 = SELECT
                          0x04,  # P1 04 = select by name
                          0x00,  # P2 00 = first or only occurrence
-                         0x06,  # Lc 05 = 8 bytes in data field
+                         0x06,  # Lc 06 = 6 bytes in data field
                          0xD4, 0xD4, 0xD4, 0xD4, 0xD4, 0xD4]  # Applet ID
 
         data, sw1, sw2 = connection.transmit(applet_select)
@@ -171,11 +178,11 @@ class client:
     # Action taken when response from card received.
     # c_c: Card Verifiable Credential authenticating Q_c.Contains Q_c somehow.
     def authenticate(self, nonce_c, authcryptogram, c_c):
-        # Obtain card ID
-        id_c = truncate8(hashfun(c_c))
+        # Obtain card ID. id_c represented as bytes object.
+        id_c = truncate8(hashfun(bytes(c_c)))
 
         # TODO
-        cvc_extract(c_c)
+        self.cvc_extract(c_c)
 
         # Derive shared secret from card's public key, host private key.
         z = ec_dh(self.d_h, self.Q_c)
@@ -186,13 +193,19 @@ class client:
         # keydatalen length of secret keying material to be derived. Limited by
         # hashlen.
         # info is context-specific data. See 800-56A 5.8.1.2.
-        sk_cfrm, sk_mac, sk_enc, sk_rmac, z_next = kdf(z, keydatalen, info)
+        sk_cfrm, sk_mac, sk_enc, sk_rmac, z_next =
+        keys = kdf(z, keydatalen, info)
+        sk_cfrm = keys[0:16]
+        sk_mac = keys[16:32]
+        sk_enc = keys[32:48]
+        sk_rmac = keys[48:64]
+        z_next = keys[64:80]
 
         # zeroise z
         z = 0
 
         # If fails, throw auth error.
-        inputs = concat("KC_1_V", id_c, id_h, truncate16(Q_h))
+        inputs = concat(bytes("KC_1_V"), id_c, id_h, truncate16(self.Q_h))
         checkval = C_MAC(sk_cfrm, inputs)
         check(authcryptogram, checkval)
 

@@ -12,6 +12,7 @@ import javacard.security.CryptoException;
 // abstract class.
 public class AESCMAC128 extends Signature {
 
+
     // Constant to be XORed with last byte in subkey generation, defined in
     // NIST 800-38B standards.
     private static byte Rb = (byte) 0x87;
@@ -41,7 +42,7 @@ public class AESCMAC128 extends Signature {
 
             // If not leftmost byte, carry msb of current byte to the next byte.
             if (i > 0) {
-                buffer[i+1] += c;
+                buffer[(short)(i+1)] += c;
             }
         }
     }
@@ -121,7 +122,7 @@ public class AESCMAC128 extends Signature {
         Util.arrayCopy(input, (short)(inOffset + fullBlocksLen), lastBlock,
                                                         (short)0, (short)16);
 
-        if (len - fullBlocksLen == 16) {
+        if ((short)(len - fullBlocksLen) == 16) {
             // Last block takes up entire block, XOR with k1
             for (short i = 0; i < 16; i++) {
                 lastBlock[i] = (byte)(lastBlock[i] ^ k1[i]);
@@ -142,13 +143,13 @@ public class AESCMAC128 extends Signature {
         AESCipher.init(aesKey, ciphermode);
 
         // Step 6
-        for (int i = 0; i < fullBlocks; i++) {
-            for (int j = 0; j < 16; j++) {
-                cipher[j] = (byte)(cipher[j] ^ input[i*16+j]);
+        for (short i = 0; i < fullBlocks; i++) {
+            for (short j = 0; j < 16; j++) {
+                cipher[j] = (byte)(cipher[j] ^ input[(short)(i*16+j)]);
             }
             AESCipher.doFinal(cipher, (short)0, (short)16, cipher, (short)0);
         }
-        for (int j = 0; j < 16; j++) {
+        for (short j = 0; j < 16; j++) {
             cipher[j] = (byte)(cipher[j] ^ lastBlock[j]);
         }
         AESCipher.doFinal(cipher, (short)0, (short)16, cipher, (short)0);
@@ -168,9 +169,9 @@ public class AESCMAC128 extends Signature {
 
         short blocks = (short)(len / 16);
 
-        for (int i = 0; i < blocks; i++) {
-            for (int j = 0; j < 16; j++) {
-                cipher[j] = (byte)(cipher[j] ^ input[inOffset + i*16 + j]);
+        for (short i = 0; i < blocks; i++) {
+            for (short j = 0; j < 16; j++) {
+                cipher[j] = (byte)(cipher[j] ^ input[(short)(inOffset + i*16 + j)]);
             }
             AESCipher.doFinal(cipher, (short)0, (short)16, cipher, (short)0);
         }
@@ -185,8 +186,8 @@ public class AESCMAC128 extends Signature {
         // TODO: Timing attack?
         byte[] t = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
         sign(input, inOffset, len, t, (short)0);
-        for (int i = 0; i < sigLen; i++) {
-            if (sigBuff[i+sigOffset] != t[i]) {
+        for (short i = 0; i < sigLen; i++) {
+            if (sigBuff[(short)(i+sigOffset)] != t[i]) {
                 return false;
             }
         }
@@ -197,7 +198,7 @@ public class AESCMAC128 extends Signature {
 
         // Tests this implementation according to https://tools.ietf.org/html/rfc4493#section-2.4
 
-        Signature sig = new AESCMAC128();
+        Signature sig = (Signature) new AESCMAC128();
         short ZERO = 0;
 
         byte[] k = new byte[] {
@@ -267,4 +268,5 @@ public class AESCMAC128 extends Signature {
 
 
     }
+
 }
