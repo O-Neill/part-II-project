@@ -1,4 +1,3 @@
-# TODO: Issue card with CVC.
 import asn1
 from smartcard.CardRequest import CardRequest
 import hashlib
@@ -24,6 +23,27 @@ def encode_key(key):
     return keyencoder.output()
 
 
+# Format of sig is (r,s) concatenated directly, 32B each. Encode using BER.
+def encode_sig(sig):
+    sigencoder = asn1.Encoder()
+    sigencoder.start()
+    # Start overall sequence for containing the signature data.
+    sigencoder.enter(0x10)
+    # Start algorithm identifier sequence
+    sigencoder.enter(0x10)
+    sigencoder.write('1.2.840.10045.4.3.2', 0x06)
+    sigencoder.leave()
+    sigencoder.enter(0x10)
+    # NOTE: Assume r and s stored in the same number of bytes.
+    intlen = int(len(sig) / 2)
+    print("number: " + str(int.from_bytes(bytes(sig[intlen:]), byteorder='big')))
+    sigencoder.write(int.from_bytes(bytes(sig[:intlen]), byteorder='big'), 0x02)  # Write 'r' value.
+    sigencoder.write(int.from_bytes(bytes(sig[intlen:]), byteorder='big'), 0x02)  # Write 's' value.
+    sigencoder.leave()
+    sigencoder.leave()
+    return sigencoder.output()
+
+
 def select(connection):
 
     applet_select = [0x00,  # CLA 00 = ISO7816-4 command
@@ -46,16 +66,15 @@ def generate_card_keys(connection, issuer_id, guid):
     keygen_request.append(len(issuer_id) + len(guid))  # Lc - total data length
     keygen_request.extend(issuer_id)
     keygen_request.extend(guid)
-    keygen_request.append(0x41)  # Expect 65B Pubkey (0x41 in Hex).
+    keygen_request.append(0x81)  # Expect 65B Pubkey and 64B signature.
     data, sw1, sw2 = connection.transmit(keygen_request)
     pubkey = data[0:65]
     signature = data[65:]
-    print("Get data:\n" + str(pubkey))
     print(hex(sw1) + ", " + hex(sw2))
     return pubkey, signature
 
 
-def format_cvc(connection, signature):
+def format_cvc(connection):
     # TODO: use proper values (not just test ones)
     # 6B Issuer ID, 2B Issuer Key ID (for issued CVC)
     issuerID = bytes([0, 0, 0, 0, 0, 0, 0, 1])
@@ -65,6 +84,7 @@ def format_cvc(connection, signature):
     guID = bytes([0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
 
     pubkey, signature = generate_card_keys(connection, issuerID, guID)
+    print("Signature: \n" + str(signature) + ", length " + str(len(signature)))
 
     encoder = asn1.Encoder()
     encoder.start()
@@ -78,14 +98,10 @@ def format_cvc(connection, signature):
 
     encoder.write(encoded_key, 0x7F49)
 
-    # TODO: Format properly, copying in the signature value (which isn't fully
-    # encoded in DER form).
-    encoder.write(bytes(signature), 0x5F37)
+    encoder.write(encode_sig(signature), 0x5F37)
 
     # role ID: 0x00 for card application key CVC
     encoder.write(bytes([0x00]), 0x5F4C)
-
-    print("cvc: " + str(encoder.output()))
 
     return encoder.output()
 
@@ -100,8 +116,14 @@ def send_cvc(connection, cvc):
     print("cvc apdu: " + str(set_cvc_apdu))
 
     data, sw1, sw2 = connection.transmit(set_cvc_apdu)
-    print("Upload:\n" + str(data))
     print(hex(sw1) + ", " + hex(sw2))
+
+
+# SHA-256, input val as byte array, generate 256-bit hash code as byte array.
+def hashfun(val):
+    hash_obj = hashlib.sha256()
+    hash_obj.update(val)
+    return hash_obj.digest()
 
 
 cardRequest = CardRequest(timeout=None)
@@ -118,3 +140,9 @@ cvc = format_cvc(connection)
 
 # Upload the CVC onto the card.
 send_cvc(connection, cvc)
+
+card_id = hashfun(cvc)[:8]
+id_file = open("trusted_card_id.txt")
+
+
+# TODO: Calculate ID from CVC, and save it as an approved card.

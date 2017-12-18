@@ -193,7 +193,7 @@ public class AESCMAC128 extends Signature {
         }
         return true;
     }
-
+/*
     public static void test() {
 
         // Tests this implementation according to https://tools.ietf.org/html/rfc4493#section-2.4
@@ -268,5 +268,5 @@ public class AESCMAC128 extends Signature {
 
 
     }
-
+*/
 }

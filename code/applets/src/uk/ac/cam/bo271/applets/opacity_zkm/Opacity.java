@@ -14,13 +14,14 @@ import javacard.security.ECPublicKey;
 import javacard.security.ECPrivateKey;
 import javacard.security.CryptoException;
 
-// TODO: Consider what happens if deselect at any point.
+// TODO: Consider what happens if deselect at any point. May need atomic
+// transactions provided by JCSystem.
 // Make more efficient by avoiding creating new arrays.
 //
 
 public class Opacity extends Applet {
-    private static byte[] cvc;
-    private static byte[] id_card;
+    private byte[] cvc;
+    private byte[] id_card;
 
     // secp256r1 curve parameters:
     // Field specification parameter.
@@ -93,7 +94,7 @@ public class Opacity extends Applet {
     private static byte[] MESSAGE_STRING = {(byte)75, (byte)67, (byte)95,
                                             (byte)49, (byte)95, (byte)86};
 
-    private static KeyPair kp;
+    private KeyPair kp;
 
     public static void install(byte[] bArray, short bOffset, byte bLength) {
         Opacity applet = new Opacity();
@@ -111,7 +112,8 @@ public class Opacity extends Applet {
 
     // Verify input key belongs to EC domain.
     private void validate_key(byte[] key) {
-        // TODO
+        // TODO Should be able to attempt to create Key object and catch
+        // exception.
     }
 
     private byte[] get_secret(byte[] pubkey_host) {
@@ -160,13 +162,14 @@ public class Opacity extends Applet {
     }
 
     private void cmac(byte[] key, short key_offset, byte[] mac_input, byte[] sig, short sigOffset) {
-
+/*
         Signature aes_cmac = new AESCMAC128();
         AESKey mac_key = (AESKey)KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
         mac_key.setKey(key, (short)key_offset);
         aes_cmac.init(mac_key, Signature.MODE_SIGN);
 
         aes_cmac.sign(mac_input, (short)0, (short)mac_input.length, sig, sigOffset);
+        */
     }
 
 
@@ -268,7 +271,8 @@ public class Opacity extends Applet {
     }
 
 
-    public void init_keys(APDU apdu) {
+    public void init_keys_and_sign(APDU apdu) {
+        short sig_len = 64;
         // Generate 256b EC key pair.
         ECPrivateKey p = (ECPrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_EC_FP_PRIVATE, (short)256, false);
         ECPublicKey q = (ECPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_EC_FP_PUBLIC, (short)256, false);
@@ -288,6 +292,7 @@ public class Opacity extends Applet {
         q.setK(SECP256R1_H);
         q.setR(SECP256R1_N, (short)0, (short)SECP256R1_N.length);
 
+
         // Create the KeyPair using the two individual uninitialised keys.
         kp = new KeyPair(q, p);
 
@@ -302,10 +307,11 @@ public class Opacity extends Applet {
             ISOException.throwIt(ISO7816.SW_WRONG_P1P2);
         }
 
-        byte[] pubkey_array = JCSystem.makeTransientByteArray((short)65, JCSystem.CLEAR_ON_DESELECT);
+        // Temporary array containing the new public key and corresponding CVC signature.
+        byte[] key_sig_array = JCSystem.makeTransientByteArray((short)200, JCSystem.CLEAR_ON_DESELECT);
         short key_len = 0;
         try {
-            key_len = pub.getW(pubkey_array, (short)0);
+            key_len = pub.getW(key_sig_array, (short)0);
         } catch(Exception e) {
             ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
         }
@@ -315,60 +321,58 @@ public class Opacity extends Applet {
             ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
         }
 
-        send(pubkey_array, (short)0, key_len, apdu);
+        byte[] buffer = apdu.getBuffer();
 
+        // Generate signature section for the CVC using the new private key.
 
-        // Run as atomic transaction.
-        //JCSystem.beginTransaction();
+        Signature signer = new ECDSA_SHA_256();
+        signer.init(kp.getPrivate(), Signature.MODE_SIGN);
 
-        // TODO: key issuing or whatever. (Or should this be done by APDU?
-        // Although that may not be secure)
-        // i.e. issue CVC. Also compute ID from CVC.
-        // TODO: Calculate ID from CVC
-        //JCSystem.commitTransaction();
+        byte issuer_id_len = buffer[ISO7816.OFFSET_P1];
+        byte guid_len = (byte)(buffer[ISO7816.OFFSET_LC] - issuer_id_len);
 
+        signer.update(buffer, ISO7816.OFFSET_CDATA, issuer_id_len);
+        signer.update(buffer, (short)(ISO7816.OFFSET_CDATA + issuer_id_len), guid_len);
+
+        short sigBytes = 0;
+
+        // Outputs concatenation of r and s, 32B each.
+        sigBytes = signer.sign(key_sig_array, (short)0, key_len, key_sig_array, key_len);
+        if (sigBytes != sig_len) {
+            ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
+        }
+
+        send(key_sig_array, (short)0, (short)(key_len + sig_len), apdu);
     }
-
-    // Resize the array by deleting old object, creating new one.
-	void updateBuffer(byte requiredSize){
-     	try{
-         	if(cvc != null && cvc.length == requiredSize){
-             	//we already have a buffer of required size
-             	return;
-         	}
-
-	        JCSystem.beginTransaction();
-	        byte[] oldBuffer = cvc;
-	        cvc = new byte[requiredSize];
-	        if (oldBuffer != null)
-	            JCSystem.requestObjectDeletion();
-	        JCSystem.commitTransaction();
-     	} catch(Exception e){
-         	JCSystem.abortTransaction();
-     	}
-	}
 
     public void set_cvc(APDU apdu) {
         byte[] buffer = apdu.getBuffer();
-		byte Lc = buffer[ISO7816.OFFSET_LC]; // cvc length
-		updateBuffer((byte)Lc);
+		short Lc = Util.makeShort((byte)0x00, buffer[ISO7816.OFFSET_LC]); // cvc length
+        cvc = new byte[Lc];
+
 		Util.arrayCopy(buffer, ISO7816.OFFSET_CDATA, cvc, (short)0, Lc);
+
+        // Calculate ID from CVC.
+        byte[] temp = JCSystem.makeTransientByteArray((short)32, JCSystem.CLEAR_ON_DESELECT);
+        hash(cvc, (short)0, Lc, temp, (short)0);
+        if (id_card == null) {
+            id_card = new byte[8];
+        }
+        Util.arrayCopy(temp, (short)0, id_card, (short)0, (short)8);
     }
 
     public void process(APDU apdu) {
+        JCSystem.requestObjectDeletion();
 
         byte[] buffer = apdu.getBuffer();
 
 		byte cla = buffer[ISO7816.OFFSET_CLA];
 		byte ins = buffer[ISO7816.OFFSET_INS];
-        switch(cla) {
-            // ISO7816-4 command, typically seen due to SELECT command.
-            case (byte)0x00:
-                return;
 
-            // 0x80 means user-defined i.e. part of the protocol.
-            case (byte)0x80:
-                break;
+        if (cla != (byte)0x80) {
+            // 0x80 means user-defined i.e. part of the protocol
+            ISOException.throwIt(cla);
+            return;
         }
 
         switch(ins) {
@@ -380,12 +384,11 @@ public class Opacity extends Applet {
                 // Generate new key pair, return public key in APDU response.
                 // TODO: Consider security implications of easily resetted keys.
 
-                // TODO: Replace with intermediate function that also calcualtes
-                // digital signature and sends it along with the key.
-                init_keys(apdu);
+                init_keys_and_sign(apdu);
                 break;
             case (byte)0x22:
                 // Accept and save CVC passed by issuer.
+                // TODO: Consider implementing CVC construction on-card.
                 set_cvc(apdu);
                 break;
 
