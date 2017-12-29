@@ -14,7 +14,7 @@ public class AESCMAC128 extends Signature {
 
 
     // Constant to be XORed with last byte in subkey generation, defined in
-    // NIST 800-38B standards.
+    // NIST 800-38B standards. Generates 16B CMAC keys.
     private static byte Rb = (byte) 0x87;
     private byte[] k1;
     private byte[] k2;
@@ -22,29 +22,40 @@ public class AESCMAC128 extends Signature {
 
     private byte ciphermode;
     private byte[] cipher;
+    private byte[] prev_block;
+    private boolean seen_data;
+    Cipher AESCipher;
 
     // TODO: Initialise and use.
     private byte[] k;
     private byte[] lastBlock;
 
     public AESCMAC128() {
-        // TODO:
 
     }
 
     private void leftShiftArray(byte[] buffer) {
-        byte c = 0;
+        if (buffer == null) {
+            ISOException.throwIt((short)0x5532);
+        }
+        byte carry = 0;
+        byte c2 = 0;
+        // Storage is big-endian, so to loop starting at the LSB, need to start
+        // at the larger index.
         for (short i = (short)(buffer.length - 1); i >= 0; i--) {
             // carry msb in buffer
-            c = (byte)(buffer[i]>>7);
 
-            buffer[i] = (byte)(buffer[i]<<1);
+            // Carry value for next byte is the most significant bit of the
+            // current one.
+            c2 = (byte)(buffer[i] >> 7);
 
-            // If not leftmost byte, carry msb of current byte to the next byte.
-            if (i > 0) {
-                buffer[(short)(i+1)] += c;
-            }
+            // Left-shift, and apply the carry.
+            buffer[i] = (byte)((buffer[i] << 1) + carry);
+
+            // Update the carry to the carry value of the next byte.
+            carry = c2;
         }
+
     }
 
     // Calling this method repeatedly will generate key rotations that can be
@@ -101,62 +112,87 @@ public class AESCMAC128 extends Signature {
         aesKey.getKey(k, (short)0);
         k1 = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
         Util.arrayCopy(k, (short)0, k1, (short)0, (short)16);
+
         subkeys(k1);
+
         k2 = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
         Util.arrayCopy(k1, (short)0, k2, (short)0, (short)16);
+
         subkeys(k2);
         cipher = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
-        lastBlock = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
+        Util.arrayFillNonAtomic(cipher, (short)0, (short)16, (byte)0x00);
+        prev_block = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
+        seen_data = false;
+
+        AESCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
+        AESCipher.init(aesKey, ciphermode);
     }
 
     public short sign(byte[] input, short inOffset, short len, byte[] sigBuff, short sigOffset) {
-        // TODO: If last block is incomplete, pad with 1 followed by 0s.
-        // Then XOR with k1
-
+        lastBlock = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
         // Number of complete blocks (minus the last one if the last is complete)
-        short fullBlocks = (short)(len-1/16);  // Number of blocks before last.
-        short fullBlocksLen = (short)(16 * fullBlocks);
+        short leadingBlocks = (short)(len/16);  // Number of blocks before last.
+        short lastBlockLen = (short)(len % 16);
+        if (lastBlockLen == 0) {
+            // Ensure the last block has some content.
+            leadingBlocks--;
+            lastBlockLen = 16;
+        }
+        short leadingBlocksLen = (short)(16 * leadingBlocks);
+
+        if (lastBlock == null) {
+            ISOException.throwIt((short)0x4455);
+        }
+        if (input == null) {
+            ISOException.throwIt((short)0x4456);
+        }
+        if (input.length < (short)(inOffset + leadingBlocksLen)) {
+            ISOException.throwIt((short)0x4457);
+        }
+
+        // TODO: Complete the last block if not complete, then feed all input
+        // into update(), then return the resulting cipher value.
+
 
         // Step 4
         // Get last (possibly incomplete) block
-        Util.arrayCopy(input, (short)(inOffset + fullBlocksLen), lastBlock,
-                                                        (short)0, (short)16);
+        Util.arrayCopy(input, (short)(inOffset + leadingBlocksLen), lastBlock,
+                       (short)0, lastBlockLen);
 
-        if ((short)(len - fullBlocksLen) == 16) {
-            // Last block takes up entire block, XOR with k1
+
+        if (lastBlockLen == 16) {
+            // Last block takes up entire block, XOR it with k1
             for (short i = 0; i < 16; i++) {
                 lastBlock[i] = (byte)(lastBlock[i] ^ k1[i]);
             }
         } else {
-            short numBytes = (short)(len - fullBlocksLen);
             // Pad last block with 1 followed by 0s and XOR with k2
-            lastBlock[numBytes] = 0x08;
-            for (short i = (short)(numBytes + 1); i < 16; i++) {
+
+            // Set the byte following the last data byte to 10000000
+            lastBlock[lastBlockLen] = (byte)0x80;
+            // Set all later bytes to 0.
+            for (short i = (short)(lastBlockLen + 1); i < 16; i++) {
                 lastBlock[i] = 0x00;
             }
+
+            // Now XOR entire block with k2.
             for (short i = 0; i < 16; i++) {
                 lastBlock[i] = (byte)(lastBlock[i] ^ k2[i]);
             }
         }
 
-        Cipher AESCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
-        AESCipher.init(aesKey, ciphermode);
+        // Cipher the input, including the last (possibly padded) block.
+        update(input, inOffset, leadingBlocksLen);
+        prev_block = lastBlock;
+        update(prev_block, (short)0, (short)16);
+        cipher_cached_block();
 
-        // Step 6
-        for (short i = 0; i < fullBlocks; i++) {
-            for (short j = 0; j < 16; j++) {
-                cipher[j] = (byte)(cipher[j] ^ input[(short)(i*16+j)]);
-            }
-            AESCipher.doFinal(cipher, (short)0, (short)16, cipher, (short)0);
-        }
-        for (short j = 0; j < 16; j++) {
-            cipher[j] = (byte)(cipher[j] ^ lastBlock[j]);
-        }
-        AESCipher.doFinal(cipher, (short)0, (short)16, cipher, (short)0);
         Util.arrayCopy(cipher, (short)0, sigBuff, sigOffset, (short)16);
         return 16;
     }
 
+    // TODO: Cipher the second last one. The last one may be the last of the
+    // message.
     public void update(byte[] input, short inOffset, short len) {
 
         // input should be positive multiple of block size
@@ -164,17 +200,34 @@ public class AESCMAC128 extends Signature {
             CryptoException.throwIt(CryptoException.ILLEGAL_USE);
         }
 
-        Cipher AESCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
-        AESCipher.init(aesKey, ciphermode);
+        // If this is not the first data seen, cipher the previously seen
+        // block.
+        if (seen_data) {
+            cipher_cached_block();
+        }
+        seen_data = true;
 
         short blocks = (short)(len / 16);
 
-        for (short i = 0; i < blocks; i++) {
+        // Process all but last block (it could be the last in the message in
+        // which case it should be processed differently)
+        for (short i = 0; i < (short)(blocks-1); i++) {
+            // C_i = Cipher(C_(i-1) ^ M_i)
             for (short j = 0; j < 16; j++) {
                 cipher[j] = (byte)(cipher[j] ^ input[(short)(inOffset + i*16 + j)]);
             }
             AESCipher.doFinal(cipher, (short)0, (short)16, cipher, (short)0);
         }
+
+        // TODO: Not correct. Get last block.
+        Util.arrayCopy(input, (short)(inOffset + len - 16), prev_block, (short)0, (short)16);
+    }
+
+    private void cipher_cached_block() {
+        for (short j = 0; j < 16; j++) {
+            cipher[j] = (byte)(cipher[j] ^ prev_block[j]);
+        }
+        AESCipher.doFinal(cipher, (short)0, (short)16, cipher, (short)0);
     }
 
     public boolean verify(byte[] input, short inOffset, short len,

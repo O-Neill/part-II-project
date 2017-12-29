@@ -17,7 +17,7 @@ def encode_key(key):
     keyencoder = asn1.Encoder()
     keyencoder.start()
     keyencoder.write('1.2.840.10045.3.1.7', 0x06)
-    formattedkey = bytearray([0x04])
+    formattedkey = bytearray()
     formattedkey.extend(key)
     keyencoder.write(bytes(formattedkey), 0x86)
     return keyencoder.output()
@@ -37,8 +37,10 @@ def encode_sig(sig):
     # NOTE: Assume r and s stored in the same number of bytes.
     intlen = int(len(sig) / 2)
     print("number: " + str(int.from_bytes(bytes(sig[intlen:]), byteorder='big')))
-    sigencoder.write(int.from_bytes(bytes(sig[:intlen]), byteorder='big'), 0x02)  # Write 'r' value.
-    sigencoder.write(int.from_bytes(bytes(sig[intlen:]), byteorder='big'), 0x02)  # Write 's' value.
+
+    # Write r and s values
+    sigencoder.write(int.from_bytes(bytes(sig[:intlen]), byteorder='big'), 0x02)
+    sigencoder.write(int.from_bytes(bytes(sig[intlen:]), byteorder='big'), 0x02)
     sigencoder.leave()
     sigencoder.leave()
     return sigencoder.output()
@@ -50,10 +52,12 @@ def select(connection):
                      0xA4,  # INS A4 = SELECT
                      0x04,  # P1 04 = select by name
                      0x00,  # P2 00 = first or only occurrence
-                     0x06,  # Lc 05 = 8 bytes in data field
+                     0x06,  # Lc 06 = 6 bytes in data field
                      0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6]  # Applet ID
 
     data, sw1, sw2 = connection.transmit(applet_select)
+    print("select")
+    print(hex(sw1) + ", " + hex(sw2))
     # TODO: expect sw1,sw2 is success. If not, throw exception.
 
 
@@ -85,6 +89,7 @@ def format_cvc(connection):
 
     pubkey, signature = generate_card_keys(connection, issuerID, guID)
     print("Signature: \n" + str(signature) + ", length " + str(len(signature)))
+    print("Pubkey: \n" + str(pubkey) + ", length " + str(len(pubkey)))
 
     encoder = asn1.Encoder()
     encoder.start()
@@ -108,11 +113,12 @@ def format_cvc(connection):
 
 def send_cvc(connection, cvc):
     set_cvc_apdu = [0x80,  # CLA 80 - user defined.
-                    0x22,  # INS 21 - Generate key request.
+                    0x22,  # INS 22 - Send formatted CVC.
                     0x00,  # P1  00 - unused
                     0x00,  # P2  00 - unused
                     len(cvc)]  # Total data length
     set_cvc_apdu.extend(cvc)
+    print("CVC: " + str([i for i in cvc]))
     print("cvc apdu: " + str(set_cvc_apdu))
 
     data, sw1, sw2 = connection.transmit(set_cvc_apdu)
@@ -126,6 +132,7 @@ def hashfun(val):
     return hash_obj.digest()
 
 
+print("\n\nISSUING PROCESS")
 cardRequest = CardRequest(timeout=None)
 cardservice = cardRequest.waitforcard()
 
@@ -142,7 +149,9 @@ cvc = format_cvc(connection)
 send_cvc(connection, cvc)
 
 card_id = hashfun(cvc)[:8]
-id_file = open("trusted_card_id.txt")
+
+print("CVC length: " + str(len(cvc)))
+#id_file = open("trusted_card_id.txt")
 
 
 # TODO: Calculate ID from CVC, and save it as an approved card.

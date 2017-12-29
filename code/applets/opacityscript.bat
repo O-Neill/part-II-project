@@ -6,4 +6,4 @@ GPShell.exe gpshellscripts\opacityinstall.txt
 
 python ..\Python\HostApp\Issuer.py
 
-python ..\Python\HostApp\Issuer.py
+python ..\Python\HostApp\HostApp.py

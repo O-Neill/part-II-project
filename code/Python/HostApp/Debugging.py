@@ -248,7 +248,7 @@ class Client:
         auth_request = [0x80,  # CLA 80 - user defined .
                         0x20,  # INS 20 - Auth request.
                         len(pubkey_h_arr),  # P1 - length of host public key in bytes
-                        0x00,  # P2  00 for normal, 01 for print val
+                        0x06,  # P2  00 for normal, 01 for print val
                         datalen]  # Total data length
 
         # Data is host ID followed by ephemeral host public key.
@@ -259,6 +259,7 @@ class Client:
 
         start = time.time()
         data, sw1, sw2 = connection.transmit(auth_request)
+        print("data: " + str(data))
         end = time.time()
         print("AUTHENTICATE")
         print("Data length: " + str(len(data)))
