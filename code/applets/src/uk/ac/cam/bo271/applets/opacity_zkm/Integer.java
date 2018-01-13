@@ -2,6 +2,7 @@ package uk.ac.cam.bo271.applets.opacity_zkm;
 
 import javacard.framework.JCSystem;
 import javacard.framework.Util;
+import javacard.framework.APDU;
 
 /**
  *
@@ -328,6 +329,33 @@ public class Integer {
         this.magnitude.copy(bnh.fnc_int_multiply_tmpThis);
         bnh.fnc_int_multiply_mod.unlock();
         bnh.fnc_int_multiply_tmpThis.unlock();
+    }
+
+    // for debug purposes
+    public void multiply(Integer other, short passes, APDU apdu) {
+        /*
+        if (this.isPositive() && other.isNegative()) {
+            this.setSign((byte) 1);
+        } else if (this.isNegative() && other.isPositive()) {
+            this.setSign((byte) 1);
+        } else {
+            this.setSign((byte) 0);
+        }
+
+        // Make mod BN as maximum value (positive, leading 0x80)
+        bnh.fnc_int_multiply_mod.lock();
+
+        bnh.fnc_int_multiply_mod.set_size(this.magnitude.length());
+        bnh.fnc_int_multiply_mod.zero();
+        bnh.fnc_int_multiply_mod.as_byte_array()[0] = (byte) 0x80;  // Max INT+1 Value
+
+        bnh.fnc_int_multiply_tmpThis.lock();
+        bnh.fnc_int_multiply_tmpThis.set_size(this.magnitude.length());
+        bnh.fnc_int_multiply_tmpThis.mod_mult(this.getMagnitude(), other.getMagnitude(), bnh.fnc_int_multiply_mod);
+        this.magnitude.copy(bnh.fnc_int_multiply_tmpThis);
+        bnh.fnc_int_multiply_mod.unlock();
+        bnh.fnc_int_multiply_tmpThis.unlock();
+        */
     }
 
     /**

@@ -13,6 +13,7 @@ import javacard.security.AESKey;
 import javacard.security.ECPublicKey;
 import javacard.security.ECPrivateKey;
 import javacard.security.CryptoException;
+import java.io.IOException;
 
 // TODO: Consider what happens if deselect at any point. May need atomic
 // transactions provided by JCSystem.
@@ -26,72 +27,6 @@ public class Opacity extends Applet {
     private byte[] id_card;
     private ECConfig m_ecc;
     private boolean DEBUG = false;
-
-    // secp256r1 curve parameters:
-    // Field specification parameter.
-    private static byte[] SECP256R1_P =
-                              {(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF,
-                               0x00, 0x00, 0x00, (byte)0x01,
-                               0x00, 0x00, 0x00, 0x00,
-                               0x00, 0x00, 0x00, 0x00,
-                               0x00, 0x00, 0x00, 0x00,
-                               (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF,
-                               (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF,
-                               (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF};
-
-    // The 2 coefficients of the curve y^2 = x^3 + ax + b
-    private static byte[] SECP256R1_A =
-                              {(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF,
-                               0x00, 0x00, 0x00, (byte)0x01,
-                               0x00, 0x00, 0x00, 0x00,
-                               0x00, 0x00, 0x00, 0x00,
-                               0x00, 0x00, 0x00, 0x00,
-                               (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF,
-                               (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF,
-                               (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFC};
-    private static byte[] SECP256R1_B =
-                              {(byte)0x5A, (byte)0xC6, (byte)0x35, (byte)0xD8,
-                               (byte)0xAA, (byte)0x3A, (byte)0x93, (byte)0xE7,
-                               (byte)0xB3, (byte)0xEB, (byte)0xBD, (byte)0x55,
-                               (byte)0x76, (byte)0x98, (byte)0x86, (byte)0xBC,
-                               (byte)0x65, (byte)0x1D, (byte)0x06, (byte)0xB0,
-                               (byte)0xCC, (byte)0x53, (byte)0xB0, (byte)0xF6,
-                               (byte)0x3B, (byte)0xCE, (byte)0x3C, (byte)0x3E,
-                               (byte)0x27, (byte)0xD2, (byte)0x60, (byte)0x4B};
-
-    // Base point of the curve (Uncompressed version, compressed isn't accepted)
-    private static byte[] SECP256R1_G =
-                              {(byte)0x04,
-                               (byte)0x6B, (byte)0x17, (byte)0xD1, (byte)0xF2,
-                               (byte)0xE1, (byte)0x2C, (byte)0x42, (byte)0x47,
-                               (byte)0xF8, (byte)0xBC, (byte)0xE6, (byte)0xE5,
-                               (byte)0x63, (byte)0xA4, (byte)0x40, (byte)0xF2,
-                               (byte)0x77, (byte)0x03, (byte)0x7D, (byte)0x81,
-                               (byte)0x2D, (byte)0xEB, (byte)0x33, (byte)0xA0,
-                               (byte)0xF4, (byte)0xA1, (byte)0x39, (byte)0x45,
-                               (byte)0xD8, (byte)0x98, (byte)0xC2, (byte)0x96,
-                               (byte)0x4F, (byte)0xE3, (byte)0x42, (byte)0xE2,
-                               (byte)0xFE, (byte)0x1A, (byte)0x7F, (byte)0x9B,
-                               (byte)0x8E, (byte)0xE7, (byte)0xEB, (byte)0x4A,
-                               (byte)0x7C, (byte)0x0F, (byte)0x9E, (byte)0x16,
-                               (byte)0x2B, (byte)0xCE, (byte)0x33, (byte)0x57,
-                               (byte)0x6B, (byte)0x31, (byte)0x5E, (byte)0xCE,
-                               (byte)0xCB, (byte)0xB6, (byte)0x40, (byte)0x68,
-                               (byte)0x37, (byte)0xBF, (byte)0x51, (byte)0xF5};
-
-    // Prime number representing the order of G. Also referred to as R.
-    private static byte[] SECP256R1_N =
-                              {(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF,
-                               0x00, 0x00, 0x00, 0x00,
-                               (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF,
-                               (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF,
-                               (byte)0xBC, (byte)0xE6, (byte)0xFA, (byte)0xAD,
-                               (byte)0xA7, (byte)0x17, (byte)0x9E, (byte)0x84,
-                               (byte)0xF3, (byte)0xB9, (byte)0xCA, (byte)0xC2,
-                               (byte)0xFC, (byte)0x63, (byte)0x25, (byte)0x51};
-
-    // Cofactor of the order of the fixed point G.
-    private static short SECP256R1_H = 0x01;
 
     // 6B message string forming the start of the CMAC input as per NIST 800-56A.
     // Represents "KC_1_V" meaning party V provides the tag in unilateral key confirmation.
@@ -122,36 +57,8 @@ public class Opacity extends Applet {
         // exception.
     }
 
-    // Perform EC_DH algorithm using host public key and card private key
-    // to acquire the shared secret.
+
     private byte[] get_secret(byte[] pubkey_host, APDU apdu) {
-        // Should only contain X data.
-        if (pubkey_host.length != 32) {
-            ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-        }
-
-        short keySize = 32;
-        byte[] privKey = JCSystem.makeTransientByteArray(keySize, JCSystem.CLEAR_ON_DESELECT);
-        short num_bytes = ((ECPrivateKey)kp.getPrivate()).getS(privKey, (short)0);
-        if (num_bytes != keySize) {
-            ISOException.throwIt(num_bytes);
-        }
-
-        byte[] buffer = apdu.getBuffer();
-        if(buffer[ISO7816.OFFSET_P2] == 0x06) {
-            send(privKey, (short)0, (short)32, apdu);
-            return null;
-        }
-
-        // TODO: Calculate Z = h * d_a * Q_h
-        Bignat d_a = new Bignat(privKey, m_ecc.bnh);
-        Bignat Q_b = new Bignat(pubkey_host, m_ecc.bnh);
-        Bignat z = new Bignat((short)(d_a.length() + Q_b.length()), JCSystem.CLEAR_ON_RESET, m_ecc.bnh);
-        z.mult(d_a, Q_b);
-        return z.as_byte_array();
-    }
-/*  Couldn't get library ECDH function to accept the public key value.
-    private byte[] get_secret(byte[] pubkey_host) {
         // NOTE: Key agreement with cofactor multiplication. Is this what I want?
         KeyAgreement dh = KeyAgreement.getInstance(KeyAgreement.ALG_EC_SVDP_DH, false);
 
@@ -159,30 +66,39 @@ public class Opacity extends Applet {
         dh.init(kp.getPrivate());
 
         // TODO: What's the smallest array I can use?
-        byte temp[] = JCSystem.makeTransientByteArray((short)100, JCSystem.CLEAR_ON_DESELECT);
+        byte temp[] = JCSystem.makeTransientByteArray((short)32, JCSystem.CLEAR_ON_DESELECT);
 
         // Throws CryptoException if pubkey formatted wrong.
         short len = 0;
 
+
         try {
             len = dh.generateSecret(pubkey_host, (short)0, (short)pubkey_host.length, temp, (byte)0);
+            send(temp, (short)0, (short)temp.length, apdu);
+            return null;
         } catch (CryptoException e) {
-            ISOException.throwIt((short)(e.getReason() + 0x1100));
-        }
-        if (len != 16) {
-            ISOException.throwIt((short)(0x1600 + len));
+            if (e.getReason() != 0x01) {
+                ISOException.throwIt((short)(e.getReason() + 0x1100));
+            } else {
+                send(pubkey_host, (short)0, (short)pubkey_host.length, apdu);
+                return null;
+            }
         }
 
+        /*
+        if (len != 16) {
+            ISOException.throwIt((short)(0x1600 + len));
+        }*/
 
         byte[] output = new byte[len];
         Util.arrayCopy(temp, (byte)0, output, (short)0, len);
         return output;
+
     }
-    */
 
     // Outputs key material in 'keys' array.
-    public void kdf(byte[] secret, byte len, byte[] info, byte[] keys) {
-        byte hashlen = 32;
+    public void kdf(byte[] secret, short len, byte[] info, byte[] keys, short outOffset, APDU apdu) {
+        short hashlen = 32;
 
         short hashinputlen = (short)(4 + secret.length + info.length);
 
@@ -212,9 +128,18 @@ public class Opacity extends Applet {
                 // array.
                 byte[] temp = new byte[32];
                 hash(hashinput, (short)0, (short)hashinput.length, temp, (short)0);
-                Util.arrayCopy(temp, (short)0, keys, (short)(i*hashlen), (short)(len%hashlen));
+                Util.arrayCopy(temp, (short)0, keys, (short)(outOffset + i*hashlen), (short)(len%hashlen));
             } else {
-                hash(hashinput, (short)0, (short)hashinput.length, keys, (short)(i*hashlen));
+
+                byte[] buffer = apdu.getBuffer();
+                if (i == 0 && buffer[ISO7816.OFFSET_P2] == 0x07) {
+                    Util.arrayCopy(hashinput, (short)0, keys, outOffset, (short)hashinput.length);
+                    hash(hashinput, (short)0, (short)hashinput.length, keys, (short)(outOffset + hashinput.length + 8));
+                    return;
+                }
+
+                hash(hashinput, (short)0, (short)hashinput.length, keys, (short)(outOffset + i*hashlen));
+
             }
         }
     }
@@ -254,23 +179,79 @@ public class Opacity extends Applet {
 
         validate_key(pubkey);
         byte[] z = get_secret(pubkey, apdu);
-
-        if(buffer[ISO7816.OFFSET_P2] == 0x06) {
+        if (z == null) {
             return;
         }
 
+        // Debug stuff.
+        if(buffer[ISO7816.OFFSET_P2] == 0x06) {
+            return;
+        }
         if(buffer[ISO7816.OFFSET_P2] == 0x01) {
+            // Return host ID.
             send(id_h, (short)0, (short)id_h.length, apdu);
             return;
         } else if (buffer[ISO7816.OFFSET_P2] == 0x02) {
+            // Return only public key
             send(pubkey, (short)0, keylen, apdu);
             return;
         } else if (buffer[ISO7816.OFFSET_P2] == 0x03) {
+            // Return shared secret and CVC
             short ret_len = (short)(32 + cvc.length);
             byte[] ret_arr = new byte[ret_len];
-            Util.arrayCopy(z, (short)0, ret_arr, (short)0, (short)16);
+            if (z.length > 32) {
+                ISOException.throwIt((short)0x7178);
+            }
+            Util.arrayCopy(z, (short)0, ret_arr, (short)0, (short)z.length);
             Util.arrayCopy(cvc, (short)0, ret_arr, (short)32, (short)cvc.length);
             send(ret_arr, (short)0, ret_len, apdu);
+            return;
+
+        } else if (buffer[ISO7816.OFFSET_P2] == 0x07) {
+            // Return kdf info, shared secret, and keying material.
+
+            // Generate 16B nonce.
+            RandomData rand = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
+            byte[] nonce = new byte[16];
+            rand.generateData(nonce, (short)0, (short)16);
+
+            // Total length of required AES key material 5y where y is length of AES key in bytes.
+
+            // Some amount of contextual info to seed kdf.
+            // TODO: Calculate info as id_c||id_h||truncate16(Q_h)||nonce
+            short info_len = (short)(id_h.length + id_card.length + 16 + 16);
+            byte[] info = new byte[info_len];
+            short offset = 0;
+            Util.arrayCopy(id_card, (short)0, info, (short)offset, (short)id_card.length);
+            offset += id_card.length;
+            Util.arrayCopy(id_h, (short)0, info, offset, (short)id_h.length);
+            offset += id_h.length;
+            Util.arrayCopy(pubkey, (short)0, info, offset, (short)16);
+            offset += 16;
+            Util.arrayCopy(nonce, (short)0, info, offset, (short)16);
+
+
+            short key_mat_len = 164;//(short)(4*16 + 64);
+            short return_len = key_mat_len;//(short)(key_mat_len + 4 + info_len + 4 + z.length);
+            byte[] ret_buffer = new byte[return_len];
+
+            // Place keying material in return buffer
+            kdf(z, key_mat_len, info, ret_buffer, (short)0, apdu);
+
+            // Place info into return buffer
+            short info_offset = (short)(key_mat_len + 4);
+            //Util.arrayCopy(info, (short)0, ret_buffer, info_offset, info_len);
+
+            short secret_offset = (short)(info_offset + info_len + 4);
+
+            //Util.arrayCopy(z, (short)0, ret_buffer, secret_offset, (short)z.length);
+            send(ret_buffer, (short)0, return_len, apdu);
+
+            return;
+        } else if (buffer[ISO7816.OFFSET_P2] == 0x08) {
+            byte[] priv = new byte[32];
+            ((ECPrivateKey)kp.getPrivate()).getS(priv, (short)0);
+            send(priv, (short)0, (short)32, apdu);
             return;
         }
 
@@ -280,30 +261,34 @@ public class Opacity extends Applet {
         short mac_offset = (short)16;
         short cvc_offset = (short)32;
 
-        byte[] ret_buffer = apdu.getBuffer();
-        short le = apdu.setOutgoing();
-        if (le < return_len)
-            ISOException.throwIt( ISO7816.SW_WRONG_LENGTH );
-        apdu.setOutgoingLength(return_len);
+        byte[] ret_buffer = new byte[return_len];
 
         // Generate 16B nonce.
         RandomData rand = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
         rand.generateData(ret_buffer, nonce_offset, (short)16);
 
         // Total length of required AES key material 5y where y is length of AES key in bytes.
-        byte len = 5*16;
+        short len = (short)(4*16 + 64);
 
         // Some amount of contextual info to seed kdf.
-        // TODO: Calculate info as id_c||id_h||truncate16(Q_h)||nonce
-        byte[] info = new byte[16];
-        byte[] keys = new byte[len];
-        kdf(z, len, info, keys);
+        // Calculate info as id_c||id_h||truncate16(Q_h)||nonce
+        short info_len = (short)(id_h.length + id_card.length + 16 + 16);
+        byte[] info = new byte[info_len];
+        short offset = 0;
+        Util.arrayCopy(id_card, (short)0, info, (short)offset, (short)id_card.length);
+        offset += id_card.length;
+        Util.arrayCopy(id_h, (short)0, info, offset, (short)id_h.length);
+        offset += id_h.length;
+        Util.arrayCopy(pubkey, (short)0, info, offset, (short)8);
+        offset += 8;
+        Util.arrayCopy(ret_buffer, nonce_offset, info, offset, (short)16);
 
+        byte[] keys = new byte[len];
+        kdf(z, len, info, keys, (short)0, apdu);
 
 
         // Parse out keys using offsets
         short k_crfm_offset = 0;
-
         short k_mac_offset = (short)16;
         short k_enc_offset = (short)32;
         short k_rmac_offset = (short)48;
@@ -329,13 +314,25 @@ public class Opacity extends Applet {
         // Only need leftmost 16 bytes of pubkey_h.
         Util.arrayCopy(pubkey, (short)0, mac_input, position, (short)16);
 
+
+        if (buffer[ISO7816.OFFSET_P2] == 0x08) {
+            // Return CMAC input and output
+            // 54B input, 6B padding, 16B output
+            byte[] ret = new byte[54 + 6 + 16];
+            Util.arrayCopy(keys, k_crfm_offset, ret, (short)0, (short)16);
+            Util.arrayCopy(mac_input, (short)0, ret, (short)16, (short)38);
+            cmac(keys, k_crfm_offset, mac_input, ret, (short)60);
+            send(ret, (short)0, (short)ret.length, apdu);
+            return;
+        }
+
         // Generate cmac, placing output into return buffer.
         cmac(keys, k_crfm_offset, mac_input, ret_buffer, mac_offset);
 
         // Copy card's CVC into return buffer.
         Util.arrayCopy(cvc, (short)0, ret_buffer, cvc_offset, (short)cvc.length);
 
-        apdu.sendBytes((short)0, return_len);
+        send(ret_buffer, (short)0, return_len, apdu);
 
     }
 
@@ -347,6 +344,7 @@ public class Opacity extends Applet {
 
         if (ret_len < len)
             ISOException.throwIt( ISO7816.SW_WRONG_LENGTH );
+
         apdu.setOutgoingLength(len);
 
         Util.arrayCopy(buf, offset, ret_buffer, (short)0, len);
@@ -363,19 +361,19 @@ public class Opacity extends Applet {
         ECPublicKey q = (ECPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_EC_FP_PUBLIC, (short)256, false);
 
         // Initialise key parameters to the parameters of SECP256R1 curve.
-        p.setA(SECP256R1_A, (short)0, (short)SECP256R1_A.length);
-        p.setB(SECP256R1_B, (short)0, (short)SECP256R1_B.length);
-        p.setFieldFP(SECP256R1_P, (short)0, (short)SECP256R1_P.length);
-        p.setG(SECP256R1_G, (short)0, (short)SECP256R1_G.length);
-        p.setK(SECP256R1_H);
-        p.setR(SECP256R1_N, (short)0, (short)SECP256R1_N.length);
+        p.setA(SecP256r1.a, (short)0, (short)SecP256r1.a.length);
+        p.setB(SecP256r1.b, (short)0, (short)SecP256r1.b.length);
+        p.setFieldFP(SecP256r1.p, (short)0, (short)SecP256r1.p.length);
+        p.setG(SecP256r1.G, (short)0, (short)SecP256r1.G.length);
+        p.setK((short)0x01);
+        p.setR(SecP256r1.r, (short)0, (short)SecP256r1.r.length);
 
-        q.setA(SECP256R1_A, (short)0, (short)SECP256R1_A.length);
-        q.setB(SECP256R1_B, (short)0, (short)SECP256R1_B.length);
-        q.setFieldFP(SECP256R1_P, (short)0, (short)SECP256R1_P.length);
-        q.setG(SECP256R1_G, (short)0, (short)SECP256R1_G.length);
-        q.setK(SECP256R1_H);
-        q.setR(SECP256R1_N, (short)0, (short)SECP256R1_N.length);
+        q.setA(SecP256r1.a, (short)0, (short)SecP256r1.a.length);
+        q.setB(SecP256r1.b, (short)0, (short)SecP256r1.b.length);
+        q.setFieldFP(SecP256r1.p, (short)0, (short)SecP256r1.p.length);
+        q.setG(SecP256r1.G, (short)0, (short)SecP256r1.G.length);
+        q.setK((short)0x01);
+        q.setR(SecP256r1.r, (short)0, (short)SecP256r1.r.length);
 
 
         // Create the KeyPair using the two individual uninitialised keys.
@@ -384,10 +382,7 @@ public class Opacity extends Applet {
         // Generate values for the key pair.
         kp.genKeyPair();
 
-        ECPublicKey pub = (ECPublicKey) kp.getPublic();
-
-
-        if (pub.getSize() != 256) {
+        if (q.getSize() != 256) {
             // TODO: not the right type. Change.
             ISOException.throwIt(ISO7816.SW_WRONG_P1P2);
         }
@@ -397,7 +392,7 @@ public class Opacity extends Applet {
         byte[] key_sig_array = JCSystem.makeTransientByteArray(total_len, JCSystem.CLEAR_ON_DESELECT);
         short keyBytes = 0;
         try {
-            keyBytes = pub.getW(key_sig_array, (short)0);
+            keyBytes = q.getW(key_sig_array, (short)0);
         } catch(Exception e) {
             ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
         }
@@ -448,10 +443,116 @@ public class Opacity extends Applet {
         Util.arrayCopy(temp, (short)0, id_card, (short)0, (short)id_bytes);
     }
 
+    public void ecpoint_test(APDU apdu) {
+
+        //byte[] priv_a = {(byte)225, (byte)22, (byte)5, (byte)91, (byte)30, (byte)87, (byte)151, (byte)123, (byte)72, (byte)45, (byte)107, (byte)146, (byte)19, (byte)230, (byte)68, (byte)230, (byte)23, (byte)183, (byte)167, (byte)153, (byte)114, (byte)42, (byte)87, (byte)42, (byte)84, (byte)235, (byte)1, (byte)240, (byte)15, (byte)23, (byte)183, (byte)195};
+
+        byte[] pnt_1 = {(byte)4,
+                        (byte)209, (byte)3, (byte)31, (byte)104,
+                        (byte)36, (byte)73, (byte)169, (byte)115,
+                        (byte)1, (byte)182, (byte)114, (byte)179,
+                        (byte)173, (byte)21, (byte)10, (byte)190,
+                        (byte)126, (byte)68, (byte)46, (byte)53,
+                        (byte)226, (byte)164, (byte)114, (byte)197,
+                        (byte)178, (byte)170, (byte)158, (byte)92,
+                        (byte)189, (byte)185, (byte)220, (byte)167,
+                        (byte)17, (byte)61, (byte)68, (byte)142,
+                        (byte)238, (byte)102, (byte)83, (byte)226,
+                        (byte)195, (byte)164, (byte)74, (byte)169,
+                        (byte)126, (byte)83, (byte)58, (byte)252,
+                        (byte)3, (byte)217, (byte)47, (byte)52,
+                        (byte)108, (byte)139, (byte)233, (byte)109,
+                        (byte)75, (byte)131, (byte)186, (byte)48,
+                        (byte)14, (byte)155, (byte)132, (byte)201};
+
+        byte[] pnt_2 = {(byte)4,
+                        (byte)89, (byte)236, (byte)154, (byte)193,
+                        (byte)141, (byte)243, (byte)233, (byte)25,
+                        (byte)68, (byte)167, (byte)178, (byte)189,
+                        (byte)144, (byte)142, (byte)190, (byte)72,
+                        (byte)107, (byte)5, (byte)64, (byte)248,
+                        (byte)39, (byte)148, (byte)41, (byte)84,
+                        (byte)138, (byte)249, (byte)136, (byte)82,
+                        (byte)6, (byte)219, (byte)244, (byte)186,
+                        (byte)249, (byte)28, (byte)4, (byte)149,
+                        (byte)176, (byte)246, (byte)23, (byte)102,
+                        (byte)153, (byte)184, (byte)251, (byte)24,
+                        (byte)225, (byte)135, (byte)14, (byte)45,
+                        (byte)77, (byte)52, (byte)207, (byte)152,
+                        (byte)146, (byte)94, (byte)29, (byte)248,
+                        (byte)206, (byte)15, (byte)141, (byte)85,
+                        (byte)193, (byte)53, (byte)117, (byte)44};
+
+
+        ECCurve curve = new ECCurve(false, SecP256r1.p, SecP256r1.a, SecP256r1.b, SecP256r1.G, SecP256r1.r);
+
+        ECPoint pt = new ECPoint(curve, m_ecc.ech);
+        ECPoint pt2 = new ECPoint(curve, m_ecc.ech);
+
+        //byte[] cpy = new byte[pub_b.length];
+        //Util.arrayCopy(pub_b, (short)0, cpy, (short)0, (short)cpy.length);
+        pt.setW(pnt_1, (short)0, (short)65);
+        pt2.setW(pnt_2, (short)0, (short)65);
+
+        Bignat x = new Bignat((short)32, JCSystem.CLEAR_ON_RESET, m_ecc.bnh);
+        Bignat y = new Bignat((short)32, JCSystem.CLEAR_ON_RESET, m_ecc.bnh);
+        Bignat g = new Bignat((short)32, JCSystem.CLEAR_ON_RESET, m_ecc.bnh);
+
+        byte[] y_q_arr = new byte[32];
+        byte[] y_p_arr = new byte[32];
+        Util.arrayCopy(pnt_1, (short)1, y_p_arr, (short)0, (short)32);
+        Util.arrayCopy(pnt_2, (short)1, y_q_arr, (short)0, (short)32);
+        Bignat y_p = new Bignat(y_p_arr, m_ecc.bnh);
+        Bignat y_q = new Bignat(y_q_arr, m_ecc.bnh);
+/*
+        m_ecc.bnh.rm.locker.setLockingActive(false);
+
+        byte[] a = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)5, (byte)130, (byte)13};
+
+        byte[] b = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)1};
+/*
+        Bignat aa = new Bignat(a, m_ecc.bnh);
+        Bignat bb = new Bignat(b, m_ecc.bnh);
+        Integer ai = new Integer((byte)0, aa, false, m_ecc.bnh);
+        Integer bi = new Integer((byte)0, bb, false, m_ecc.bnh);
+        bi.multiply(ai);
+*/
+
+        ArithmeticFuncs.egcd(y_q, y_p, x, y, g, m_ecc, apdu);
+
+
+/*
+        byte[] ret = new byte[64];
+        Util.arrayCopy(g.as_byte_array(), (short)0, ret, (short)0, (short)32);
+        Util.arrayCopy(x.as_byte_array(), (short)0, ret, (short)32, (short)32);
+        send(ret, (short)0, (short)64, apdu);
+
+/*
+        pt = ArithmeticFuncs.point_add(pt, pt2, m_ecc, apdu);
+        if (pt == null) {
+            return;
+        }
+
+
+        pt.getW(pnt_1, (short)0);
+        send(pnt_1, (short)0, (short)65, apdu);
+
+/*
+        byte[] x_val = new byte[32];
+        pt.getX(x_val, (short)0);
+        send(x_val, (short)0, (short)32, apdu);
+        */
+    }
+
     public void process(APDU apdu) {
         // TODO: Move to setup
         if (m_ecc == null) {
+            // TODO: Should it be 256?
             m_ecc = new ECConfig((short)512);
+            m_ecc.bnh.rm.locker.setLockingActive(false);
+            m_ecc.ech.rm.locker.setLockingActive(false);
         }
 
         JCSystem.requestObjectDeletion();
@@ -467,24 +568,65 @@ public class Opacity extends Applet {
             return;
         }
 
-        switch(ins) {
-            // ins 0x20 is regular authentication request.
-            case (byte)0x20:
-                authenticate(apdu);
-                break;
-            case (byte)0x21:
-                // Generate new key pair, return public key in APDU response.
-                // TODO: Consider security implications of easily resetted keys.
+        try {
+            switch(ins) {
+                // ins 0x20 is regular authentication request.
+                case (byte)0x20:
+                    authenticate(apdu);
+                    break;
+                case (byte)0x21:
+                    // Generate new key pair, return public key in APDU response.
+                    // TODO: Consider security implications of easily resetted keys.
 
-                init_keys_and_sign(apdu);
-                break;
-            case (byte)0x22:
-                // Accept and save CVC passed by issuer.
-                // TODO: Consider implementing CVC construction on-card.
-                set_cvc(apdu);
-                break;
+                    init_keys_and_sign(apdu);
+                    break;
+                case (byte)0x22:
+                    // Accept and save CVC passed by issuer.
+                    // TODO: Consider implementing CVC construction on-card.
+                    set_cvc(apdu);
+                    break;
 
-            default: ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+                case (byte)0x23:
+                    //AESCMAC128.test(apdu);
+                    break;
+
+                case (byte)0x24:
+                    // ECPoint testing
+                    ecpoint_test(apdu);
+                    break;
+
+                default: ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+            }
+        } catch (ArithmeticException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x04, (byte)0x00));
+        } catch (ArrayStoreException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x05, (byte)0x00));
+        } catch (ClassCastException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x06, (byte)0x00));
+        } catch (IndexOutOfBoundsException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x07, (byte)0x00));
+        } catch (NegativeArraySizeException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x08, (byte)0x00));
+        } catch (NullPointerException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x09, (byte)0x00));
+        } catch (SecurityException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x0A, (byte)0x00));
+        } catch (APDUException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x0B, (byte)e.getReason()));
+        } catch (CryptoException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x0C, (byte)e.getReason()));
+        } catch (ISOException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x0D, (byte)e.getReason()));
+        } catch (PINException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x0E, (byte)e.getReason()));
+        } catch (SystemException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x0F, (byte)e.getReason()));
+        } catch (TransactionException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x10, (byte)e.getReason()));
+        } catch (CardRuntimeException e) {
+            ISOException.throwIt(Util.makeShort((byte)0x11, (byte)e.getReason()));
+        } catch (Exception e) {
+            ISOException.throwIt(Util.makeShort((byte)0xFF, (byte)0x00));
         }
     }
 }

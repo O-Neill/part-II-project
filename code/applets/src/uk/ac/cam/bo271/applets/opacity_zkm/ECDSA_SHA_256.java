@@ -83,82 +83,7 @@ public class ECDSA_SHA_256 extends Signature {
         }
     }
 
-    // When this returns, k contains its modular inverse.
-    public void mod_inv(Bignat k, Bignat mod, Bignat_Helper bnh) {
-        Bignat n = new Bignat(k.length(), JCSystem.CLEAR_ON_RESET, bnh);
-        n.copy(mod);
 
-        // If n is one, no solution. Return 0.
-        byte[] n_arr = n.as_byte_array();
-        boolean is_one = false;
-        if (n_arr[(short)(n.length()-1)] == 0x01) {
-            is_one = true;
-            for (short i = 0; i < (short)(n.length()-1); i++) {
-                if (n_arr[i] != 0) {
-                    is_one = false;
-                }
-            }
-        }
-        if (is_one) {
-            k.zero();
-            return;
-        }
-
-        Bignat q = new Bignat(k.length(), JCSystem.CLEAR_ON_RESET, bnh);
-        Bignat t = new Bignat(k.length(), JCSystem.CLEAR_ON_RESET, bnh);
-        Bignat x0 = new Bignat(k.length(), JCSystem.CLEAR_ON_RESET, bnh);
-        x0.zero();
-
-        Bignat n0 = new Bignat(k.length(), JCSystem.CLEAR_ON_RESET, bnh);
-        n0.copy(n);
-
-        // Initialise x1 = 1
-        Bignat x1 = new Bignat(k.length(), JCSystem.CLEAR_ON_RESET, bnh);
-        x1.zero();
-        x1.increment_one();
-        Bignat zero = new Bignat(k.length(), JCSystem.CLEAR_ON_RESET, bnh);
-        zero.zero();
-
-        // Longer length needed?
-        Bignat intermediate = new Bignat((short)(2 * k.length()), JCSystem.CLEAR_ON_RESET, bnh);
-
-        // while k > 1
-        while(Bignat_Helper.ONE.smaller(k))
-        {
-            // q is quotient
-            // q = k / n;
-            q.copy(k);
-            q.divide(n);
-
-            // t = n;
-            t.copy(n);
-
-            // m is remainder now, process
-            // same as Euclid's algo
-            // m = a % n; k = t
-            k.mod(n);
-            n.copy(k);
-            k.copy(t);
-
-            // t = x0
-            t.copy(x0);
-
-            // x0 = x1 - q * x0;
-            intermediate.mult(q, x0);
-            x0.copy(x1);
-            x0.subtract(intermediate);
-
-            // x1 = t;
-            x1.copy(t);
-        }
-
-        // Make x1 positive
-        if (x1.smaller(zero))
-            x1.add(n0);
-
-        // Return the value currently stored in x1.
-        k.copy(x1);
-    }
 
     public short sign(byte[] inBuff, short inOffset, short inLength, byte[] sigBuff, short sigOffset) {
 
@@ -172,7 +97,6 @@ public class ECDSA_SHA_256 extends Signature {
         // library. This function worked the first time, but the second time
         // it failed because the lock object had somehow been lost from the
         // locking list.
-        m_ecc.bnh.rm.locker.setLockingActive(false);
 
         // Step 0: Get order value n.
         byte[] order = JCSystem.makeTransientByteArray((short)32, JCSystem.CLEAR_ON_RESET);
@@ -234,7 +158,7 @@ public class ECDSA_SHA_256 extends Signature {
         Bignat d = new Bignat(d_arr, m_ecc.bnh);
 
         // Get inverse of k modulo n
-        mod_inv(k, n, m_ecc.bnh);
+        ArithmeticFuncs.mod_inv(k, n, m_ecc.bnh, null);
 
         Bignat s = new Bignat(order_len, JCSystem.MEMORY_TYPE_TRANSIENT_DESELECT, m_ecc.bnh);
 

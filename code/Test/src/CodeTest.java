@@ -3,8 +3,17 @@ import java.util.Arrays;
 
 public class CodeTest {
 	public static void main(String[] args) {
-		String s = "KC_1_V";
-		byte[] bArray = s.getBytes();
-		System.out.println(Arrays.toString(bArray));
+		byte val = (byte)0xCF;
+		System.out.println(Integer.toBinaryString(val));
+		val >>= (byte)7;
+		System.out.println(Integer.toBinaryString(val));
+		val = (byte)(val & 1);
+		System.out.println(Integer.toBinaryString(val));
+		
+		if (val == (byte)1) {
+			System.out.println(Integer.toBinaryString(val));
+		}
+		
+		
 	}
 }

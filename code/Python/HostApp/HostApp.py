@@ -16,6 +16,11 @@ import time
 from cryptography.hazmat.primitives.asymmetric import ec
 import asn1
 
+import sys
+import os
+sys.path.append(os.path.join(sys.path[0], '../lib/python-rubenesque'))
+from rubenesque.curves.sec import secp256r1
+
 
 from smartcard.CardRequest import CardRequest
 
@@ -66,18 +71,15 @@ def truncate16(val):
 # shared secret.
 # See ECC based key agreement, 800-56A
 # Returns shared secret as an int type.
-def ec_dh(privkey_host, pubkey_card):
-    # Should be stock ec_dh function to use.
+# Input privkey as array representing int, pubkey as array representing point.
+def ec_dh(priv_host, pub_card):
+    Q = secp256r1.create(int.from_bytes(pub_card[1:33], byteorder='big'),
+                         int.from_bytes(pub_card[33:65], byteorder='big'))
+    d = int.from_bytes(priv_host, byteorder='big')
 
-    # pubkey_card is a DER structure
-    # TODO: Am I right in assuming big-endian?
-    #print("priv: " + str(privkey_host))
-    #print("pub: " + str(pubkey_card))
-    #print(len(privkey_host))
-    d = int.from_bytes(privkey_host, byteorder='big')
-    Q = int.from_bytes(pubkey_card[1:33], byteorder='big')
-    z = d * Q
-    z_bytes = z.to_bytes(length=(z.bit_length() + 7) // 8, byteorder='big')
+    z = Q * d
+    secret = z.x
+    z_bytes = secret.to_bytes(length=(secret.bit_length() + 7) // 8, byteorder='big')
     return z_bytes
 
 
@@ -111,6 +113,48 @@ def extract_fields(data):
     cvc = data[32:]
     return nonce, mac, cvc
 
+def get_public_bytes(Q_h):
+    pubkey_h_arr = Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+
+    decoder = asn1.Decoder()
+    decoder.start(pubkey_h_arr)
+
+    decoder.enter()
+    decoder.enter()
+    # Skip over algorithm IDs.
+    tag, val = decoder.read()
+    tag, val = decoder.read()
+    decoder.leave()
+    # Skip over object identifier, to public key bitstring.
+    tag, val = decoder.read()
+
+    # Remove initial 0x04 or 0x0004 from the bitstring to get the correct
+    # format. Extract X value (first 32B)
+    if val[0] == 0:
+        return val[1:66]
+    else:
+        return val
+
+def get_private_bytes(d_h):
+    priv_bytes = d_h.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
+    #print(priv_bytes)
+    decoder = asn1.Decoder()
+    decoder.start(priv_bytes)
+    decoder.enter()
+
+    # Skip over version and algorithm ID.
+    decoder.read()
+    decoder.read()
+
+    tag, privkey_der = decoder.read()
+
+    decoder.start(privkey_der)
+    decoder.enter()
+    # Skip over version (should be 1)
+    tag, val = decoder.read()
+
+    tag, privkey = decoder.read()
+    return privkey
 
 # First action taken by card when new card conencts.
 # Returns string-format arrays
@@ -171,30 +215,6 @@ class Client:
         tag, roleID = decoder.read()
         assert tag[0] == 0x5F4C, "Expected role ID tag 0x5F4C, got %s" % hex(tag[0])
 
-    def get_public_bytes(self):
-        pubkey_h_arr = self.Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
-        # TODO: Should I remove unwanted algorithm identifiers from DER structure?
-
-        decoder = asn1.Decoder()
-        decoder.start(pubkey_h_arr)
-
-        decoder.enter()
-        decoder.enter()
-        # Skip over '1.2.840.10045.3.1'
-        tag, val = decoder.read()
-        tag, val = decoder.read()
-        decoder.leave()
-        # Skip over object identifier, to public key bitstring.
-        tag, val = decoder.read()
-        # Remove initial 0x04 or 0x0004 from the bitstring to get the correct
-        # format. Extract X value (first 32B)
-        if val[0] == 0:
-            pubkey_h_arr = val[2:34]
-        else:
-            pubkey_h_arr = val[1:33]
-        decoder.leave()
-        return pubkey_h_arr
-
     def process_card(self):
         global max_cvc_len
         cardRequest = CardRequest(timeout=None)
@@ -220,27 +240,7 @@ class Client:
         self.d_h, self.Q_h = gen_keys()
 
         # TODO: Break conversion from DER into separate function
-        pubkey_h_arr = self.Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
-        # TODO: Should I remove unwanted algorithm identifiers from DER structure?
-
-        decoder = asn1.Decoder()
-        decoder.start(pubkey_h_arr)
-
-        decoder.enter()
-        decoder.enter()
-        # Skip over '1.2.840.10045.3.1'
-        tag, val = decoder.read()
-        tag, val = decoder.read()
-        decoder.leave()
-        # Skip over object identifier, to public key bitstring.
-        tag, val = decoder.read()
-        # Remove initial 0x04 or 0x0004 from the bitstring to get the correct
-        # format. Extract X value (first 32B)
-        if val[0] == 0:
-            pubkey_h_arr = val[2:34]
-        else:
-            pubkey_h_arr = val[1:33]
-        decoder.leave()
+        pubkey_h_arr = get_public_bytes(self.Q_h)
 
         datalen = len(self.id) + len(pubkey_h_arr)
         print("datalen: " + str(datalen))
@@ -248,7 +248,7 @@ class Client:
         auth_request = [0x80,  # CLA 80 - user defined .
                         0x20,  # INS 20 - Auth request.
                         len(pubkey_h_arr),  # P1 - length of host public key in bytes
-                        0x00,  # P2  00 for normal, 01 for print val
+                        0x03,  # P2  00 for normal, 01 for print val
                         datalen]  # Total data length
 
         # Data is host ID followed by ephemeral host public key.
@@ -276,6 +276,7 @@ class Client:
         # TODO
 
         id_c = truncate8(hashfun(bytes(c_c)))
+        print("Card ID: " + str([i for i in id_c]))
 
         # TODO
         self.cvc_extract(c_c)
@@ -283,34 +284,19 @@ class Client:
         # Derive shared secret from card's public key, host private key.
         # TODO: should I use TraditionalOpenSSL encoding format?
         #print("Private key")
-        priv_bytes = self.d_h.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
-        #print(priv_bytes)
-        decoder = asn1.Decoder()
-        decoder.start(priv_bytes)
-        decoder.enter()
 
-        # Skip over version and algorithm ID.
-        decoder.read()
-        decoder.read()
+        privkey = get_private_bytes(self.d_h)
 
-        tag, privkey_der = decoder.read()
-
-        decoder.start(privkey_der)
-        decoder.enter()
-        # Skip over version (should be 1)
-        tag, val = decoder.read()
-
-        tag, privkey = decoder.read()
         print("Host Private key: " + str([i for i in privkey]))
         print("Length: " + str(len(privkey)))
         print()
 
-        pub = self.get_public_bytes()
-        print("Host Public key: " + str([i for i in pub]))
-
+        #pub = self.get_public_bytes()
+        #print("Host Public key: " + str([i for i in pub]))
+        print("Card pubkey: " + str([i for i in self.card_pubkey]))
         z = ec_dh(privkey, self.card_pubkey)
 
-        print("Card pubkey: " + str([i for i in self.card_pubkey]))
+
 
         print("Card secret: " + str(nonce_c))
         print("Host secret: " + str([i for i in z]))

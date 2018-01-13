@@ -2,7 +2,6 @@ package uk.ac.cam.bo271.applets.opacity_zkm;
 
 import javacard.framework.Util;
 import javacard.security.MessageDigest;
-import javacard.framework.ISOException;
 
 /**
  *

@@ -1369,6 +1369,7 @@ public class Bignat {
         short yOffset;
 
         bnh.lock(bnh.fnc_mult_resultArray1);
+
         // x+y
         Util.arrayFillNonAtomic(bnh.fnc_mult_resultArray1, (short) 0, (short) bnh.fnc_mult_resultArray1.length, (byte) 0);
         // We must copy bigger number first
@@ -1395,7 +1396,6 @@ public class Bignat {
 
         // x^2
         bnh.lock(bnh.fnc_mult_resultArray2);
-
         if (x_pow_2 == null) {
             // x^2 is not precomputed
             Util.arrayFillNonAtomic(bnh.fnc_mult_resultArray2, (short) 0, (short) bnh.fnc_mult_resultArray2.length, (byte) 0);
@@ -1459,9 +1459,8 @@ public class Bignat {
             this.value[i] = (byte) (short) (res | res2);
             multOffset--;
         }
-
         bnh.unlock(bnh.fnc_mult_resultArray1);
-        //bnh.unlock(bnh.fnc_mult_resultArray2);
+        bnh.unlock(bnh.fnc_mult_resultArray2);
     }
 
     /**
@@ -1474,16 +1473,14 @@ public class Bignat {
     public void mod_mult(Bignat x, Bignat y, Bignat modulo) {
         bnh.fnc_mod_mult_tmpThis.lock();
         bnh.fnc_mod_mult_tmpThis.resize_to_max(false);
-
         // Perform fast multiplication using RSA trick
         bnh.fnc_mod_mult_tmpThis.mult(x, y);
-
         // Compute modulo
         bnh.fnc_mod_mult_tmpThis.mod(modulo);
         bnh.fnc_mod_mult_tmpThis.shrink();
         this.clone(bnh.fnc_mod_mult_tmpThis);
-
         bnh.fnc_mod_mult_tmpThis.unlock();
+
     }
     // Potential speedup for  modular multiplication
     // Binomial theorem: (op1 + op2)^2 - (op1 - op2)^2 = 4 * op1 * op2 mod (mod)
@@ -1691,7 +1688,7 @@ public class Bignat {
         short tmp_size = (short)(bnh.MODULO_RSA_ENGINE_MAX_LENGTH_BITS / 8);
         bnh.fnc_mod_exp_modBN.lock();
         bnh.fnc_mod_exp_modBN.set_size(tmp_size);
-/*
+
         short len = n_mod_exp(tmp_size, this, exponent.as_byte_array(), exponent.length(), modulo, bnh.fnc_mod_exp_modBN.value, (short) 0);
         if (bnh.bIsSimulator) {
             // Decrypted length can be either tmp_size or less because of leading zeroes consumed by simulator engine implementation
@@ -1713,51 +1710,15 @@ public class Bignat {
         bnh.fnc_mod_exp_modBN.mod(modulo);
     	bnh.fnc_mod_exp_modBN.shrink();
     	this.clone(bnh.fnc_mod_exp_modBN);
-        */
         bnh.fnc_mod_exp_modBN.unlock();
+
     }
 
 
     public void mod_exp2(Bignat modulo) {
         mod_exp(Bignat_Helper.TWO, modulo);
         //this.pow2Mod_RSATrick(modulo);
-/*
-        short tmp_size = (short) (occ.bnHelper.MOD_RSA_LENGTH / 8);
 
-        // Idea: a = this with prepended zeroes, b = this with appended zeroes, modulo with appended zeroes
-        // Compute mult_RSATrick
-        this.prependzeros(tmp_size, occ.bnHelper.helper_BN_A.as_byte_array(), (short) 0);
-        occ.bnHelper.helper_BN_A.setSize(tmp_size);
-        this.appendzeros(tmp_size, occ.bnHelper.helper_BN_B.as_byte_array(), (short) 0);
-        occ.bnHelper.helper_BN_B.setSize(tmp_size);
-
-        mult_RSATrick(occ.bnHelper.helper_BN_A, occ.bnHelper.helper_BN_B);
-
-        // We will use prepared engine with exponent=2 and very large modulus (instead of provided modulus)
-        // The reason is to avoid need for setting custom modulus and re-init RSA engine
-        // Mod operation is computed later
-        occ.bnHelper.modPublicKey.setExponent(occ.bnHelper.CONST_TWO, (short) 0, (short) 1);
-        occ.locker.lock(occ.bnHelper.fastResizeArray);
-        modulo.appendzeros(tmp_size, occ.bnHelper.fastResizeArray, (short) 0);
-        // NOTE: ideally, we would just set RSA engine modulus to our modulo. But smallest RSA key is 512 bit while
-        // our values are commonly smaller (e.g., 32B for 256b ECC). Prepending leading zeroes will cause 0xf105 (CryptoException.InvalidUse)
-        //modulo.prependzeros(tmp_size, occ.bnHelper.fastResizeArray, (short) 0);
-        occ.bnHelper.modPublicKey.setModulus(occ.bnHelper.fastResizeArray, (short) 0, tmp_size);
-        occ.bnHelper.modCipher.init(occ.bnHelper.modPublicKey, Cipher.MODE_DECRYPT);
-        this.prependzeros(tmp_size, occ.bnHelper.fastResizeArray, (short) 0);
-        occ.bnHelper.modCipher.doFinal(occ.bnHelper.fastResizeArray, (byte) 0, tmp_size, occ.bnHelper.fastResizeArray, (short) 0);
-        occ.locker.unlock(occ.bnHelper.fastResizeArray);
-
-        // We used RSA engine with large modulo => some leading values will be zero (|this^2| <= 2*|this|)
-        short startOffset = 0; // Find first nonzero value in resulting buffer
-        while (occ.bnHelper.fastResizeArray[startOffset] == 0) {
-            startOffset++;
-        }
-        short len = (short) (tmp_size - startOffset);
-        this.setSize(len);
-        this.from_byte_array(len, (short) 0, occ.bnHelper.fastResizeArray, startOffset);
-        occ.locker.unlock(occ.bnHelper.fastResizeArray);
-*/
     }
     /**
      * Calculates {@code res := base ** exp mod mod} using RSA engine.

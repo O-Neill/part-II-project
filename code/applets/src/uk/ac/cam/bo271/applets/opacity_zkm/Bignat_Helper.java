@@ -97,22 +97,14 @@ public class Bignat_Helper extends Base_Helper {
     Cipher fnc_mult_cipher = null;
     MessageDigest hashEngine;
 
-    static byte[] CONST_ONE;
-    static byte[] CONST_TWO;
+    static byte[] CONST_ONE = {0x01};
+    static byte[] CONST_TWO = {0x02};
 
     public Bignat_Helper(ResourceManager resman) {
         super(resman);
     }
 
     void initialize(short modRSAEngineMaxBits, short multRSAEngineMaxBits) {
-		if (CONST_ONE == null) {
-			CONST_ONE = new byte[1];
-			CONST_ONE[0] = 0x01;
-		}
-		if (CONST_TWO == null) {
-			CONST_TWO = new byte[1];
-			CONST_TWO[0] = 0x02;
-		}
         MODULO_RSA_ENGINE_MAX_LENGTH_BITS = modRSAEngineMaxBits;
         MULT_RSA_ENGINE_MAX_LENGTH_BITS = multRSAEngineMaxBits;
 
