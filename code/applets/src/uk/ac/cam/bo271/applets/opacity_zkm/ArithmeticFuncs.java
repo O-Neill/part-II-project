@@ -23,12 +23,10 @@ public class ArithmeticFuncs {
     // TODO: Update so new thing isn't reassigned each time.
 
     public static void egcd(Bignat a, Bignat b, Bignat x_out, Bignat y_out, Bignat g_out, ECConfig ecc, APDU apdu) {
-        Bignat bound;
-        if (a.lesser(b)) {
-            bound = b;
-        } else {
-            bound = a;
-        }
+        byte[] max_arr = new byte[32];
+        Util.arrayFillNonAtomic(max_arr, (short)0, (short)max_arr.length, (byte)0xFF);
+        Bignat max_val = new Bignat(max_arr, ecc.bnh);
+
         JCSystem.requestObjectDeletion();
         Bignat last_r = g_out;
         last_r.copy(a);
@@ -37,30 +35,26 @@ public class ArithmeticFuncs {
 
         // Initialise x, last_x, y, last_y.
         // (Using Integers because intermediate values may be negative)
-        Bignat x_nat = new Bignat((short)32, JCSystem.CLEAR_ON_RESET, ecc.bnh);
-        x_nat.zero();
-        Integer x = new Integer((byte)0, x_nat, false, ecc.bnh);
-        x_out.one();
-        Integer last_x = new Integer((byte)0, x_out, false, ecc.bnh);
-
-        Bignat y_nat = new Bignat((short)32, JCSystem.CLEAR_ON_RESET, ecc.bnh);
-        y_nat.one();
-        Integer y = new Integer((byte)0, y_nat, false, ecc.bnh);
-        y_out.zero();
-        Integer last_y = new Integer((byte)0, y_out, false, ecc.bnh);
-
+        Bigint x = new Bigint(new Bignat((short)32, JCSystem.CLEAR_ON_RESET, ecc.bnh));
+        x.zero();
+        Bigint last_x = new Bigint(x_out);
+        last_x.one();
+        Bigint y = new Bigint(new Bignat((short)32, JCSystem.CLEAR_ON_RESET, ecc.bnh));
+        y.one();
+        Bigint last_y = new Bigint(y_out);
+        last_y.zero();
 
         Bignat temp = new Bignat((short)32, JCSystem.CLEAR_ON_RESET, ecc.bnh);
         Bignat temp2 = new Bignat((short)32, JCSystem.CLEAR_ON_RESET, ecc.bnh);
-        Integer temp_int = new Integer((byte)0, temp, false, ecc.bnh);
-        Integer temp_int2 = new Integer((byte)0, temp2, false, ecc.bnh);
-        Bignat quotient = new Bignat((short)32, JCSystem.CLEAR_ON_RESET, ecc.bnh);
-        Integer quotient_int = new Integer((byte)0, quotient, false, ecc.bnh);
+        Bigint temp_int = new Bigint(temp);
+        Bigint temp_int2 = new Bigint(temp2);
+        Bignat quotient_nat = new Bignat((short)32, JCSystem.CLEAR_ON_RESET, ecc.bnh);
+        Bigint quotient = new Bigint(quotient_nat);
 
         short passesSinceCleanup = 0;
 
         while (!r.is_zero()) {
-            last_r.remainder_divide(r, quotient);
+            last_r.remainder_divide(r, quotient_nat);
             temp.copy(last_r);
             last_r.copy(r);
             r.copy(temp);
@@ -69,28 +63,15 @@ public class ArithmeticFuncs {
             // an output of a different size.
             // x, lastx = lastx - quotient * x, x
             temp_int.clone(x);
-            temp_int2.clone(quotient_int);
 
-            if (passesSinceCleanup == (short)12) {
-/*
-                byte[] ret = new byte[64];
-                Util.arrayCopy(x.getMagnitude().as_byte_array(), (short)0, ret, (short)0, (short)32);
-                Util.arrayCopy(temp_int2.getMagnitude().as_byte_array(), (short)0, ret, (short)32, (short)32);
+            // TODO: SHould I use mod mult or should I allow negative values?
+            // if one is negative, flip sign afterwards.
+            temp_int2.mod_mult(x, quotient, max_val);
 
-                if (x.isNegative()) {
-                    ISOException.throwIt((byte)0x2342);
-                }
-                if (temp_int2.isNegative()) {
-                    ISOException.throwIt((byte)0x2343);
-                }
-*/
-
-                //temp_int2.getMagnitude().mod_mult(temp_int2.getMagnitude(), x.getMagnitude(), bound);
-
-                return;
-
+            if ((x.getSign() == 1) ^ (quotient.getSign() == 1)) {
+                // Product should be negative.
+                temp_int2.setSign((byte)1);
             }
-            temp_int2.multiply(x);
 
             x.clone(last_x);
             x.subtract(temp_int2);
@@ -98,20 +79,43 @@ public class ArithmeticFuncs {
 
             // y, lasty = lasty - quotient * y, y
             temp_int.clone(y);
-            temp_int2.clone(quotient_int);
-            temp_int2.multiply(y);
+
+            if (passesSinceCleanup == (short)12) {
+
+                byte[] ret = new byte[64];
+
+                byte[] num1 = new byte[32];
+                num1[31] = (byte)0x01;
+                byte[] num2 = new byte[32];
+                num2[31] = (byte)0x02;
+                //temp_int2.mod_mult(new Bigint(new Bignat(num1, ecc.bnh)), new Bigint(new Bignat(num2, ecc.bnh)), max_val);
+                /*
+                Util.arrayCopy(x.getMagnitude().as_byte_array(), (short)0, ret, (short)0, (short)32);
+                Util.arrayCopy(temp_int2.getMagnitude().as_byte_array(), (short)0, ret, (short)32, (short)32);
+
+                if (x.getSign() == (byte)1) {
+                    ISOException.throwIt((short)0x2342);
+                }
+                if (temp_int2.getSign() == (byte)1) {
+                    ISOException.throwIt((short)0x2343);
+                }
+                */
+                //temp_int2.getMagnitude().mod_mult(temp_int2.getMagnitude(), x.getMagnitude(), bound);
+                return;
+            }
+            temp_int2.mod_mult(y, quotient, max_val);
+
+            if ((x.getSign() == 1) ^ (quotient.getSign() == 1)) {
+                // Product should be negative.
+                temp_int2.setSign((byte)1);
+            }
             y.clone(last_y);
             y.subtract(temp_int2);
             last_y.clone(temp_int);
 
             passesSinceCleanup++;
 
-            if (passesSinceCleanup == (short)10) {
-                // It would fail before 12 passes previously, cleanup necessary.
-                // Don't want to clean up too often though.
-                JCSystem.requestObjectDeletion();
-                //passesSinceCleanup = 0;
-            }
+            JCSystem.requestObjectDeletion();
         }
 
 

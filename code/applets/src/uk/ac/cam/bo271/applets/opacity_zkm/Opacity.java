@@ -445,8 +445,9 @@ public class Opacity extends Applet {
 
     public void ecpoint_test(APDU apdu) {
 
-        //byte[] priv_a = {(byte)225, (byte)22, (byte)5, (byte)91, (byte)30, (byte)87, (byte)151, (byte)123, (byte)72, (byte)45, (byte)107, (byte)146, (byte)19, (byte)230, (byte)68, (byte)230, (byte)23, (byte)183, (byte)167, (byte)153, (byte)114, (byte)42, (byte)87, (byte)42, (byte)84, (byte)235, (byte)1, (byte)240, (byte)15, (byte)23, (byte)183, (byte)195};
 
+        //byte[] priv_a = {(byte)225, (byte)22, (byte)5, (byte)91, (byte)30, (byte)87, (byte)151, (byte)123, (byte)72, (byte)45, (byte)107, (byte)146, (byte)19, (byte)230, (byte)68, (byte)230, (byte)23, (byte)183, (byte)167, (byte)153, (byte)114, (byte)42, (byte)87, (byte)42, (byte)84, (byte)235, (byte)1, (byte)240, (byte)15, (byte)23, (byte)183, (byte)195};
+/*
         byte[] pnt_1 = {(byte)4,
                         (byte)209, (byte)3, (byte)31, (byte)104,
                         (byte)36, (byte)73, (byte)169, (byte)115,
@@ -504,7 +505,7 @@ public class Opacity extends Applet {
         Util.arrayCopy(pnt_2, (short)1, y_q_arr, (short)0, (short)32);
         Bignat y_p = new Bignat(y_p_arr, m_ecc.bnh);
         Bignat y_q = new Bignat(y_q_arr, m_ecc.bnh);
-/*
+
         m_ecc.bnh.rm.locker.setLockingActive(false);
 
         byte[] a = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -512,13 +513,13 @@ public class Opacity extends Applet {
 
         byte[] b = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)1};
-/*
+
         Bignat aa = new Bignat(a, m_ecc.bnh);
         Bignat bb = new Bignat(b, m_ecc.bnh);
         Integer ai = new Integer((byte)0, aa, false, m_ecc.bnh);
         Integer bi = new Integer((byte)0, bb, false, m_ecc.bnh);
         bi.multiply(ai);
-*/
+
 
         ArithmeticFuncs.egcd(y_q, y_p, x, y, g, m_ecc, apdu);
 
@@ -551,8 +552,11 @@ public class Opacity extends Applet {
         if (m_ecc == null) {
             // TODO: Should it be 256?
             m_ecc = new ECConfig((short)512);
+            /*
             m_ecc.bnh.rm.locker.setLockingActive(false);
             m_ecc.ech.rm.locker.setLockingActive(false);
+            Bigint.init(m_ecc.bnh);
+            */
         }
 
         JCSystem.requestObjectDeletion();
@@ -567,7 +571,7 @@ public class Opacity extends Applet {
             ISOException.throwIt(cla);
             return;
         }
-
+/*
         try {
             switch(ins) {
                 // ins 0x20 is regular authentication request.
@@ -628,5 +632,6 @@ public class Opacity extends Applet {
         } catch (Exception e) {
             ISOException.throwIt(Util.makeShort((byte)0xFF, (byte)0x00));
         }
+        */
     }
 }
