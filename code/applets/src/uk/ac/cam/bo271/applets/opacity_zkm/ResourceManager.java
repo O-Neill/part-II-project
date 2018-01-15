@@ -2,7 +2,7 @@ package uk.ac.cam.bo271.applets.opacity_zkm;
 
 import javacard.framework.Util;
 import javacard.security.MessageDigest;
-
+import javacard.framework.*;
 /**
  *
  * @author Petr Svenda
@@ -80,15 +80,19 @@ public class ResourceManager {
         helper_BN_D = new Bignat(MAX_BIGNAT_SIZE, memAlloc.getAllocatorType(ObjectAllocator.BNH_helper_BN_D), bnh);
         helper_BN_E = new Bignat(MAX_BIGNAT_SIZE, memAlloc.getAllocatorType(ObjectAllocator.BNH_helper_BN_E), bnh);
         helper_BN_F = new Bignat((short) (MAX_BIGNAT_SIZE + 2), memAlloc.getAllocatorType(ObjectAllocator.BNH_helper_BN_F), bnh); // +2 is to correct for infrequent RSA result with two or more leading zeroes
-
         helperEC_BN_A = new Bignat(MAX_POINT_SIZE, memAlloc.getAllocatorType(ObjectAllocator.ECPH_helperEC_BN_A), bnh);
+
         helperEC_BN_B = new Bignat(MAX_COORD_SIZE, memAlloc.getAllocatorType(ObjectAllocator.ECPH_helperEC_BN_B), bnh);
         helperEC_BN_C = new Bignat(MAX_COORD_SIZE, memAlloc.getAllocatorType(ObjectAllocator.ECPH_helperEC_BN_C), bnh);
-        helperEC_BN_D = new Bignat(MAX_COORD_SIZE, memAlloc.getAllocatorType(ObjectAllocator.ECPH_helperEC_BN_D), bnh);
+
+        ISOException.throwIt((short)ObjectAllocator.ECPH_helperEC_BN_D);
+        //helperEC_BN_D = new Bignat(MAX_COORD_SIZE, memAlloc.getAllocatorType(ObjectAllocator.ECPH_helperEC_BN_D), bnh);
+        /*
         helperEC_BN_E = new Bignat(MAX_COORD_SIZE, memAlloc.getAllocatorType(ObjectAllocator.ECPH_helperEC_BN_E), bnh);
+        /*
         helperEC_BN_F = new Bignat(MAX_COORD_SIZE, memAlloc.getAllocatorType(ObjectAllocator.ECPH_helperEC_BN_F), bnh);
 
-
+        */
     }
 
     /**
