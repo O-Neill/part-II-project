@@ -1,4 +1,4 @@
-package uk.ac.cam.bo271.applets.opacity_zkm;
+package uk.ac.cam.bo271.applets.opacity_zkm_opt;
 import javacard.security.Signature;
 import javacard.security.AESKey;
 import javacard.security.Key;

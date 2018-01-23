@@ -1,28 +1,24 @@
 # This is the application that authenticates a card
 import hashlib
-import struct
-from cryptography.hazmat.primitives import cmac
-from cryptography.hazmat.primitives.ciphers import algorithms, modes
+import time
+import asn1
+import sys
+import os
+
+from smartcard.CardRequest import CardRequest
+
+import cryptography
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.backends.interfaces import DERSerializationBackend
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import cmac
+from cryptography.hazmat.primitives.ciphers import algorithms
 from cryptography.hazmat.primitives.serialization import Encoding, \
                                                          PrivateFormat, \
                                                          NoEncryption, \
-                                                         PublicFormat, \
-                                                         load_der_public_key
+                                                         PublicFormat
 
-import time
-
-from cryptography.hazmat.primitives.asymmetric import ec
-import asn1
-
-import sys
-import os
 sys.path.append(os.path.join(sys.path[0], '../lib/python-rubenesque'))
 from rubenesque.curves.sec import secp256r1
-
-
-from smartcard.CardRequest import CardRequest
 
 # TODO: Get better info on max CVC length (and why it varies)
 global max_cvc_len
@@ -103,8 +99,19 @@ def verify_mac(mac, msg, sk_cfrm):
 
     # TODO: This throws exception if false. Handle somewhere.
     # Raises InvalidSignature or TypeError.
-    c.verify(bytes(mac))
+    try:
+        c.verify(bytes(mac))
+        return True
+    except cryptography.exceptions.InvalidSignature:
+        return False
 
+
+# Input byte array (obtained from APDU), split into 16B N_c, 128b mac, C_c
+def extract_fields(data):
+    nonce = data[:16]
+    mac = data[16:32]
+    cvc = data[32:]
+    return nonce, mac, cvc
 
 def get_public_bytes(Q_h):
     pubkey_h_arr = Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
@@ -148,14 +155,6 @@ def get_private_bytes(d_h):
 
     tag, privkey = decoder.read()
     return privkey
-
-# Input byte array (obtained from APDU), split into 16B N_c, 128b mac, C_c
-def extract_fields(data):
-    nonce = data[:16]
-    mac = data[16:32]
-    cvc = data[32:]
-    return nonce, mac, cvc
-
 
 # First action taken by card when new card conencts.
 # Returns string-format arrays
@@ -240,6 +239,7 @@ class Client:
         # TODO: Should these be object fields? Or just temp variables?
         self.d_h, self.Q_h = gen_keys()
 
+        # TODO: Break conversion from DER into separate function
         pubkey_h_arr = get_public_bytes(self.Q_h)
 
         datalen = len(self.id) + len(pubkey_h_arr)
@@ -248,55 +248,53 @@ class Client:
         auth_request = [0x80,  # CLA 80 - user defined .
                         0x20,  # INS 20 - Auth request.
                         len(pubkey_h_arr),  # P1 - length of host public key in bytes
-                        0x03,  # P2  00 for normal, 01 for print val
+                        0x00,  # P2  00 for normal, 01 for print val
                         datalen]  # Total data length
-
         # Data is host ID followed by ephemeral host public key.
         auth_request.extend(self.id)
         auth_request.extend(pubkey_h_arr)
-        auth_request.append(255)  # 16B nonce, 16B C-MAC, CVC expected.
+        auth_request.append(32 + max_cvc_len)  # 16B nonce, 16B C-MAC, CVC expected.
         print("Auth request: " + str(auth_request))
 
         start = time.time()
         data, sw1, sw2 = connection.transmit(auth_request)
-        print("data: " + str(data))
-        print("Data length: " + str(len(data)))
         end = time.time()
         print("AUTHENTICATE")
-        print("Card's shared secret: " + str(data[0:32]))
+        print("Data length: " + str(len(data)))
+        print("Data: " + str(data))
         print(hex(sw1) + ", " + hex(sw2))
         nonce, mac, cvc = extract_fields(data)
+        print("Nonce: " + str(nonce))
+        print("MAC: " + str(mac))
+        print("CVC: " + str(cvc))
         print("Time taken: " + str(end - start) + " seconds")
         self.authenticate(nonce, mac, cvc)
 
     # Action taken when response from card received.
     def authenticate(self, nonce_c, authcryptogram, c_c):
         # Obtain card ID. id_c represented as bytes object.
+        # TODO
 
         id_c = truncate8(hashfun(bytes(c_c)))
-        self.cvc_extract(c_c)
+        print("Card ID: " + str([i for i in id_c]))
 
         # TODO
-        #self.cvc_extract(c_c)
+        self.cvc_extract(c_c)
 
+        # Derive shared secret from card's public key, host private key.
+        # TODO: should I use TraditionalOpenSSL encoding format?
         privkey = get_private_bytes(self.d_h)
 
-        print("Card public key: " + str([i for i in self.card_pubkey]))
         print("Host Private key: " + str([i for i in privkey]))
         print("Length: " + str(len(privkey)))
         print()
 
-        pub = get_public_bytes(self.Q_h)
-        print("Host Public key: " + str([i for i in pub]))
-
+        #pub = self.get_public_bytes()
+        #print("Host Public key: " + str([i for i in pub]))
+        print("Card pubkey: " + str([i for i in self.card_pubkey]))
         z = ec_dh(privkey, self.card_pubkey)
 
-
-        nonce_c.extend(authcryptogram)
-        print("Card secret: " + str(nonce_c))
         print("Host secret: " + str([i for i in z]))
-        print("Length: " + str(len([i for i in z])))
-        print("Equal: " + str(z == nonce_c))
 
 
         # zeroise d_h
@@ -324,6 +322,7 @@ class Client:
 
         # TODO: Catch exception and handle.
         checkval = verify_mac(authcryptogram, inputs, sk_cfrm)
+        print(checkval)
         # check(authcryptogram, checkval)
 
         # zeroise

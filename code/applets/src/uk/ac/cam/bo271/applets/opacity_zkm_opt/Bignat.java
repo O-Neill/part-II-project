@@ -1,7 +1,7 @@
 /**
  * Credits: Based on Bignat library from OV-chip project https://ovchip.cs.ru.nl/OV-chip_2.0 by Radboud University Nijmegen
  */
-package uk.ac.cam.bo271.applets.opacity_zkm;
+package uk.ac.cam.bo271.applets.opacity_zkm_opt;
 
 import javacard.framework.ISOException;
 import javacard.framework.JCSystem;

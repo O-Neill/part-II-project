@@ -1,4 +1,4 @@
-package uk.ac.cam.bo271.applets.opacity_zkm;
+package uk.ac.cam.bo271.applets.opacity_zkm_opt;
 
 import javacard.security.KeyAgreement;
 import javacard.security.MessageDigest;

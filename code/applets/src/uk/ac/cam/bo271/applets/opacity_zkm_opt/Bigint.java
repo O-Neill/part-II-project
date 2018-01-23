@@ -1,4 +1,4 @@
-package uk.ac.cam.bo271.applets.opacity_zkm;
+package uk.ac.cam.bo271.applets.opacity_zkm_opt;
 
 // Similar idea as Integer.java but simplified to mitigate possible problems.
 public class Bigint{

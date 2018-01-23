@@ -46,8 +46,8 @@ public class HelloWorld extends Applet {
 				short le = apdu.setOutgoing();
 				if (le < GET_BALANCE_RESPONSE_SZ) ISOException.throwIt( ISO7816.SW_WRONG_LENGTH );
 				apdu.setOutgoingLength( (short)3 );
-				buffer[0] = (byte) cla;
-				buffer[1] = (byte) ins;
+				buffer[0] = cla;
+				buffer[1] = ins;
 				buffer[2] = (byte) 0;
 				apdu.sendBytes((short)0, (short)3);
 				// TODO: return something stored on card.

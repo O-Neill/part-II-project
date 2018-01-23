@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project basedir="." name="build_cr">
+	<property name="jc.home" value="C:\Users\Ben\Desktop\part_II_project\java_card_jdk\3.0.4\JCDK3_0_4" />
+
+	<taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="ant-javacard.jar"/>
+	<javacard>
+		<cap jckit="../../../java_card_jdk/3.0.4/JCDK3-0-4" aid="c1c2c3c4c5c6" package="uk.ac.cam.bo271.applets.challengeresponse" version="0.1" output="../../code/applets/bin/uk/ac/cam/bo271/applets/challengeresponse/javacard/challengeresponse.cap" sources="../../code/applets/src" classes="../../code/applets/bin">
+			<applet class="ChallengeResponse" aid="c1c2c3c4c5c601"/>
+		</cap>
+	</javacard>
+</project>

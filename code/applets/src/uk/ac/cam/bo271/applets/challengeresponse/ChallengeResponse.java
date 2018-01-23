@@ -56,7 +56,7 @@ public class ChallengeResponse extends Applet {
 	private void setArray(APDU apdu) {
 		byte[] buffer = apdu.getBuffer();
 		byte Lc = buffer[ISO7816.OFFSET_LC];
-		updateBuffer((byte)Lc);
+		updateBuffer(Lc);
 		Util.arrayCopy(buffer, ISO7816.OFFSET_CDATA, byteArray, (short)0, Lc);
 	}
 

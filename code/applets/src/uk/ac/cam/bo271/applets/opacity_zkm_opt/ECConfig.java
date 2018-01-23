@@ -1,4 +1,4 @@
-package uk.ac.cam.bo271.applets.opacity_zkm;
+package uk.ac.cam.bo271.applets.opacity_zkm_opt;
 
 import javacard.framework.ISOException;
 
@@ -74,7 +74,7 @@ public class ECConfig {
         bnh.initialize(MODULO_RSA_ENGINE_MAX_LENGTH_BITS, MULT_RSA_ENGINE_MAX_LENGTH_BITS);
 
         ech.initialize();
-        
+
     }
 
     public void refreshAfterReset() {
