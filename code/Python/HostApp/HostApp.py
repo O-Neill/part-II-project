@@ -242,7 +242,7 @@ class Client:
         # TODO: Break conversion from DER into separate function
         pubkey_h_arr = get_public_bytes(self.Q_h)
 
-        datalen = len(self.id) + len(pubkey_h_arr)
+        datalen = len(self.id) + len(pubkey_h_arr) + 1
         print("datalen: " + str(datalen))
 
         auth_request = [0x80,  # CLA 80 - user defined .
@@ -253,6 +253,7 @@ class Client:
         # Data is host ID followed by ephemeral host public key.
         auth_request.extend(self.id)
         auth_request.extend(pubkey_h_arr)
+        auth_request.append(0x01)  # Control byte 0x01 - use persistent binding.
         auth_request.append(32 + max_cvc_len)  # 16B nonce, 16B C-MAC, CVC expected.
         print("Auth request: " + str(auth_request))
 
@@ -341,4 +342,8 @@ print("\n\nAUTHENTICATION PROCESS")
 
 id_h = bytes([0, 0, 0, 0, 0, 0, 0, 1])
 cl = Client(id_h)
+import time
+start = time.time()
 cl.process_card()
+end = time.time()
+print("Time taken: " + str(end - start))

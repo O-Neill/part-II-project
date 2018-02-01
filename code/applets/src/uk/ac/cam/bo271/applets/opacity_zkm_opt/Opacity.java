@@ -23,6 +23,10 @@ public class Opacity extends Applet {
     private byte[] cvc;
     private byte[] id_card;
     private ECConfig m_ecc;
+    private PBReg pb_reg;
+
+    // TODO: Get this from CVC instead of initialising here.
+    private byte[] guid = {0, 0, 0, 0, 0, 0, 0, 0, 0, (byte)1};
 
     // 6B message string forming the start of the CMAC input as per NIST 800-56A.
     // Represents "KC_1_V" meaning party V provides the tag in unilateral key confirmation.
@@ -54,44 +58,37 @@ public class Opacity extends Applet {
     }
 
 
-    private byte[] get_secret(byte[] pubkey_host, APDU apdu) {
+    private void get_secret(byte[] pubkey_host, byte[] zOut, short zOffset, APDU apdu) {
         // NOTE: Key agreement with cofactor multiplication. Is this what I want?
         KeyAgreement dh = KeyAgreement.getInstance(KeyAgreement.ALG_EC_SVDP_DH_PLAIN, false);
 
         // TODO: Correct? or provide key in another form?
         dh.init(kp.getPrivate());
 
-        // TODO: What's the smallest array I can use?
-        byte temp[] = JCSystem.makeTransientByteArray((short)32, JCSystem.CLEAR_ON_DESELECT);
-
         // Throws CryptoException if pubkey formatted wrong.
         short len = 0;
 
-
         try {
-            len = dh.generateSecret(pubkey_host, (short)0, (short)pubkey_host.length, temp, (byte)0);
+            len = dh.generateSecret(pubkey_host, (short)0, (short)pubkey_host.length, zOut, zOffset);
         } catch (CryptoException e) {
             if (e.getReason() != 0x01) {
                 ISOException.throwIt((short)0x3638);
                 ISOException.throwIt((short)(e.getReason() + 0x1100));
             } else {
                 ISOException.throwIt((short)0x3637);
-                return null;
             }
         }
 
-
-        byte[] output = new byte[len];
-        Util.arrayCopy(temp, (byte)0, output, (short)0, len);
-        return output;
-
+        if (len != 32) {
+            ISOException.throwIt((short)0x3639);
+        }
     }
 
     // Outputs key material in 'keys' array.
     public void kdf(byte[] secret, short len, byte[] info, byte[] keys, short outOffset, APDU apdu) {
         short hashlen = 32;
 
-        short hashinputlen = (short)(4 + secret.length + info.length);
+        short hashinputlen = (short)(4 + Consts.ECDH_LEN + info.length);
 
         // NOTE: Is this overwritten by hash function?
         // NOTE: Initialised to 0?
@@ -162,12 +159,16 @@ public class Opacity extends Applet {
 
         // Data section contains 8B ID followed by 77B public key.
         byte Lc = buffer[ISO7816.OFFSET_LC];
-        // TODO: Lc should be 8+77=85B (or something). Check.
 
         // CDATA consists of 8B host ID, followed by
 
-        byte[] id_h = new byte[8];
-        Util.arrayCopy(buffer, ISO7816.OFFSET_CDATA, id_h, (short)0, (short)8);
+        byte CB_H = buffer[(short)(ISO7816.OFFSET_CDATA + Lc - 1)];
+
+        byte[] iccID;
+        byte CB_card = 0;
+
+        byte[] id_h = new byte[Consts.ID_LEN];
+        Util.arrayCopy(buffer, ISO7816.OFFSET_CDATA, id_h, (short)0, Consts.ID_LEN);
 
         // P1 contains length of encoded public key.
         short keylen = Util.makeShort((byte)0x00, buffer[ISO7816.OFFSET_P1]);
@@ -177,90 +178,116 @@ public class Opacity extends Applet {
         Util.arrayCopy(buffer, (short)(ISO7816.OFFSET_CDATA+8), pubkey, (short)0, keylen);
 
         validate_key(pubkey);
-        byte[] z = get_secret(pubkey, apdu);
-        if (z == null) {
-            return;
+
+        byte[] z = new byte[Consts.ECDH_LEN];
+        if ((CB_H & 0x0F) == Consts.PB) {
+            boolean in_storage = pb_reg.getZ(id_card, z, (short)0);
+            if (!in_storage) {
+                get_secret(pubkey, z, (short)0, apdu);
+                iccID = cvc;
+            } else {
+                iccID = id_card;
+                CB_card = Consts.PB;
+            }
+        } else {
+            get_secret(pubkey, z, (short)0, apdu);
+            iccID = cvc;
         }
 
-        // Return nonce, mac and cvc
-        short return_len = (short)(16 + 16 + cvc.length);
-        short nonce_offset = (short)0;
-        short mac_offset = (short)16;
-        short cvc_offset = (short)32;
+        boolean ret_guid = ((CB_H & Consts.RET_GUID) != 0);
+        short encguid_len = (short)(ret_guid ? 16 : 0);
+
+        // Return control byte, nonce, mac, enc_guid, and cvc
+        short return_len = (short)(1 + Consts.NONCE_LEN + Consts.CMAC_LEN + encguid_len + iccID.length);
+        short nonce_offset = (short)1;
+        short mac_offset = (short)(nonce_offset + Consts.NONCE_LEN);
+        short encguid_offset = (short)(mac_offset + Consts.CMAC_LEN);
+        short cvc_offset = (short)(encguid_offset + encguid_len);
 
         byte[] ret_buffer = new byte[return_len];
 
         // Generate 16B nonce.
+        byte[] nonce = new byte[Consts.NONCE_LEN];
         RandomData rand = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
-        rand.generateData(ret_buffer, nonce_offset, (short)16);
+        rand.generateData(nonce, (short)0, Consts.NONCE_LEN);
 
-        // Total length of required AES key material 5y where y is length of AES key in bytes.
-        short len = (short)(4*16 + 64);
+
+        // Total length of required key material: 4 16B keys, 1 32B secret.
+        short len = (short)(4*Consts.SESSIONKEY_LEN + Consts.ECDH_LEN);
 
         // Some amount of contextual info to seed kdf.
         // Calculate info as id_c||id_h||truncate16(Q_h)||nonce
-        short info_len = (short)(id_h.length + id_card.length + 16 + 16);
+        short info_len = (short)(id_h.length + id_card.length + 16 + Consts.NONCE_LEN);
         byte[] info = new byte[info_len];
         short offset = 0;
-        Util.arrayCopy(id_card, (short)0, info, offset, (short)id_card.length);
-        offset += id_card.length;
-        Util.arrayCopy(id_h, (short)0, info, offset, (short)id_h.length);
-        offset += id_h.length;
-        Util.arrayCopy(pubkey, (short)0, info, offset, (short)8);
-        offset += 8;
-        Util.arrayCopy(ret_buffer, nonce_offset, info, offset, (short)16);
-
+        Util.arrayCopy(id_card, (short)0, info, offset, Consts.ID_LEN);
+        offset += Consts.ID_LEN;
+        Util.arrayCopy(id_h, (short)0, info, offset, Consts.ID_LEN);
+        offset += Consts.ID_LEN;
+        Util.arrayCopy(pubkey, (short)0, info, offset, (short)16);
+        offset += 16;
+        Util.arrayCopy(nonce, (short)0, info, offset, Consts.NONCE_LEN);
 
         byte[] keys = new byte[len];
         kdf(z, len, info, keys, (short)0, apdu);
 
-
         // Parse out keys using offsets
         short k_crfm_offset = 0;
-        short k_mac_offset = (short)16;
-        short k_enc_offset = (short)32;
-        short k_rmac_offset = (short)48;
-        short next_z_offset = (short)64;
+        short k_mac_offset = 1*Consts.SESSIONKEY_LEN;
+        short k_enc_offset = 2*Consts.SESSIONKEY_LEN;
+        short k_rmac_offset = 3*Consts.SESSIONKEY_LEN;
+        short next_z_offset = 4*Consts.SESSIONKEY_LEN;
+
+        // If the nextZ value should be updated, do so.
+        if ((CB_H & Consts.PB) != 0 && (!pb_reg.registered(id_h) || (CB_H & Consts.PB_INIT) != 0)) {
+            pb_reg.add_or_update(id_h, keys, next_z_offset);
+            CB_card |= Consts.PB_INIT;
+        } else if (CB_card != Consts.PB) {
+            CB_card |= Consts.NO_PB;
+        }
+
+        byte[] enc_guid = {};
+
+        if (ret_guid) {
+            // Use Cipher ALG_AES_BLOCK_128_ECB_NOPAD to encrypt]
+            // TODO
+            //EncGuid = GUID XOR AES(k_enc, IV);
+            CB_card |= Consts.RET_GUID;
+        }
+
 
         // Zeroise array
-        Util.arrayFillNonAtomic(z, (short)0, (short)z.length, (byte)0);
+        Util.arrayFillNonAtomic(z, (short)0, Consts.ECDH_LEN, (byte)0);
 
         // Initialise input to mac function
 
         // Length of input to cmac function
-        short input_len = (short)(MESSAGE_STRING.length + id_card.length + id_h.length + 16);
+        short input_len = (short)(MESSAGE_STRING.length + Consts.ID_LEN + Consts.ID_LEN + 16);
         byte[] mac_input = new byte[input_len];
 
         short position = 0;
         Util.arrayCopy(MESSAGE_STRING, (short)0, mac_input, position, (short)MESSAGE_STRING.length);
         position += MESSAGE_STRING.length;
-        Util.arrayCopy(id_card, (short)0, mac_input, position, (short)id_card.length);
-        position += id_card.length;
-        Util.arrayCopy(id_h, (short)0, mac_input, position, (short)id_h.length);
-        position += id_h.length;
+        Util.arrayCopy(id_card, (short)0, mac_input, position, Consts.ID_LEN);
+        position += Consts.ID_LEN;
+        Util.arrayCopy(id_h, (short)0, mac_input, position, Consts.ID_LEN);
+        position += Consts.ID_LEN;
 
         // Only need leftmost 16 bytes of pubkey_h.
         Util.arrayCopy(pubkey, (short)0, mac_input, position, (short)16);
 
-
-        if (buffer[ISO7816.OFFSET_P2] == 0x08) {
-            // Return CMAC input and output
-            // 54B input, 6B padding, 16B output
-            byte[] ret = new byte[54 + 6 + 16];
-            Util.arrayCopy(keys, k_crfm_offset, ret, (short)0, (short)16);
-            Util.arrayCopy(mac_input, (short)0, ret, (short)16, (short)38);
-            cmac(keys, k_crfm_offset, mac_input, ret, (short)60);
-            send(ret, (short)0, (short)ret.length, apdu);
-            return;
-        }
-
-
-        JCSystem.requestObjectDeletion();
         // Generate cmac, placing output into return buffer.
         cmac(keys, k_crfm_offset, mac_input, ret_buffer, mac_offset);
 
-        // Copy card's CVC into return buffer.
-        Util.arrayCopy(cvc, (short)0, ret_buffer, cvc_offset, (short)cvc.length);
+        // Zeroise cmac key
+        Util.arrayFillNonAtomic(mac_input, (short)0, (short)mac_input.length, (byte)0);
+        Util.arrayFillNonAtomic(keys, (short)0, Consts.SESSIONKEY_LEN, (byte)0);
+
+        // Copy control byte, nonce, encrypted GUID and iccID into return buffer.
+        ret_buffer[0] = CB_card;
+        Util.arrayCopy(nonce, (short)0, ret_buffer, nonce_offset, Consts.NONCE_LEN);
+        Util.arrayCopy(enc_guid, (short)0, ret_buffer, encguid_offset, encguid_len);
+        Util.arrayCopy(iccID, (short)0, ret_buffer, cvc_offset, (short)iccID.length);
 
         send(ret_buffer, (short)0, return_len, apdu);
     }
@@ -271,8 +298,10 @@ public class Opacity extends Applet {
 
         short ret_len = apdu.setOutgoing();
 
-        if (ret_len < len)
+        if (ret_len < len) {
+            ISOException.throwIt(len);
             ISOException.throwIt( ISO7816.SW_WRONG_LENGTH );
+        }
 
         apdu.setOutgoingLength(len);
 
@@ -360,6 +389,7 @@ public class Opacity extends Applet {
         send(key_sig_array, (short)0, (short)(key_len + sigBytes), apdu);
     }
 
+    // Sets the CVC in memory and computes its hash to acquire the card ID.
     public void set_cvc(APDU apdu) {
         byte[] buffer = apdu.getBuffer();
 		short Lc = Util.makeShort((byte)0x00, buffer[ISO7816.OFFSET_LC]); // cvc length
@@ -387,6 +417,7 @@ public class Opacity extends Applet {
             m_ecc = new ECConfig((short)512);
             m_ecc.bnh.rm.locker.setLockingActive(false);
             BignatStore.init(m_ecc.bnh);
+            pb_reg = new PBReg();
         }
 
 
@@ -434,7 +465,7 @@ public class Opacity extends Applet {
             }
         } catch (ArithmeticException e) {
             ISOException.throwIt(Util.makeShort((byte)0x04, (byte)0x00));
-        } catch (ArrayStoreException e) {
+        } /*catch (ArrayStoreException e) {
             ISOException.throwIt(Util.makeShort((byte)0x05, (byte)0x00));
         } catch (ClassCastException e) {
             ISOException.throwIt(Util.makeShort((byte)0x06, (byte)0x00));
@@ -462,6 +493,6 @@ public class Opacity extends Applet {
             ISOException.throwIt(Util.makeShort((byte)0x11, (byte)e.getReason()));
         } catch (Exception e) {
             ISOException.throwIt(Util.makeShort((byte)0xFF, (byte)0x00));
-        }
+        }*/
     }
 }

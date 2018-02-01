@@ -206,8 +206,8 @@ public class Opacity extends Applet {
         offset += id_card.length;
         Util.arrayCopy(id_h, (short)0, info, offset, (short)id_h.length);
         offset += id_h.length;
-        Util.arrayCopy(pubkey, (short)0, info, offset, (short)8);
-        offset += 8;
+        Util.arrayCopy(pubkey, (short)0, info, offset, (short)16);
+        offset += 16;
         Util.arrayCopy(ret_buffer, nonce_offset, info, offset, (short)16);
 
 
@@ -241,19 +241,6 @@ public class Opacity extends Applet {
 
         // Only need leftmost 16 bytes of pubkey_h.
         Util.arrayCopy(pubkey, (short)0, mac_input, position, (short)16);
-
-
-        if (buffer[ISO7816.OFFSET_P2] == 0x08) {
-            // Return CMAC input and output
-            // 54B input, 6B padding, 16B output
-            byte[] ret = new byte[54 + 6 + 16];
-            Util.arrayCopy(keys, k_crfm_offset, ret, (short)0, (short)16);
-            Util.arrayCopy(mac_input, (short)0, ret, (short)16, (short)38);
-            cmac(keys, k_crfm_offset, mac_input, ret, (short)60);
-            send(ret, (short)0, (short)ret.length, apdu);
-            return;
-        }
-
 
         JCSystem.requestObjectDeletion();
         // Generate cmac, placing output into return buffer.

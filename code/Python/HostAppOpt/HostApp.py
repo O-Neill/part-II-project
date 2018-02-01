@@ -4,6 +4,7 @@ import time
 import asn1
 import sys
 import os
+import PBStore
 
 from smartcard.CardRequest import CardRequest
 
@@ -23,6 +24,18 @@ from rubenesque.curves.sec import secp256r1
 # TODO: Get better info on max CVC length (and why it varies)
 global max_cvc_len
 max_cvc_len = 220
+
+global RET_GUID
+RET_GUID = 0x10
+global PB
+PB = 0x01
+global PB_INIT
+PB_INIT = 0x02
+global NO_PB
+NO_PB = 0x00
+
+global applet_id
+applet_id = [0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6]
 
 
 # z is int type.
@@ -108,10 +121,19 @@ def verify_mac(mac, msg, sk_cfrm):
 
 # Input byte array (obtained from APDU), split into 16B N_c, 128b mac, C_c
 def extract_fields(data):
-    nonce = data[:16]
-    mac = data[16:32]
-    cvc = data[32:]
-    return nonce, mac, cvc
+    global RET_GUID
+    cb = data[0]
+    nonce = data[1:17]
+    mac = data[17:33]
+    if (cb & RET_GUID):
+        enc_guid = data[33:49]
+        iccID = data[49:]
+    else:
+        enc_guid = []
+        iccID = data[33:]
+
+    return cb, nonce, mac, enc_guid, iccID
+
 
 def get_public_bytes(Q_h):
     pubkey_h_arr = Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
@@ -135,6 +157,7 @@ def get_public_bytes(Q_h):
     else:
         return val
 
+
 def get_private_bytes(d_h):
     priv_bytes = d_h.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
     #print(priv_bytes)
@@ -156,20 +179,31 @@ def get_private_bytes(d_h):
     tag, privkey = decoder.read()
     return privkey
 
+
 # First action taken by card when new card conencts.
 # Returns string-format arrays
 def gen_keys():
     # Generate keypair using NIST P-256 curve, encoding using DER.
     priv = ec.generate_private_key(ec.SECP256R1(), backend=default_backend())
-    #d_h = priv.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
     pub = priv.public_key()
-    #Q_h = pub.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
     return priv, pub
+
+
+def create_apdu(cla, ins, p1, p2, data, ret_len=None):
+    apdu = [cla, ins, p1, p2, len(data)]
+    apdu.extend(data)
+    if ret_len is not None:
+        if ret_len == "max":
+            apdu.extend([0, 0])
+        else:
+            apdu.append(ret_len)
+    return apdu
 
 
 class Client:
     # Initialise client with 8B bytearray containing id.
-    def __init__(self, id_h):
+    def __init__(self, id_h, filename):
+        self.store = PBStore.Store(filename)
         # TODO: Check id length
         self.id = id_h
 
@@ -217,18 +251,21 @@ class Client:
 
     def process_card(self):
         global max_cvc_len
+        global PB
+        global PB_INIT
+        global applet_id
         cardRequest = CardRequest(timeout=None)
         cardservice = cardRequest.waitforcard()
 
         connection = cardservice.connection
         cardservice.connection.connect()
 
-        applet_select = [0x00,  # CLA 00 = ISO7816-4 command
-                         0xA4,  # INS A4 = SELECT
-                         0x04,  # P1 04 = select by name
-                         0x00,  # P2 00 = first or only occurrence
-                         0x06,  # Lc 06 = 6 bytes in data field
-                         0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6]  # Applet ID
+        # CLA 00 = ISO7816-4 command
+        # INS A4 = SELECT
+        # P1 04 = select by name
+        # P2 00 = first or only occurrence
+        # Lc 06 = 6 bytes in data field
+        applet_select = create_apdu(0x00, 0xA4, 0x04, 0x00, applet_id)
 
         data, sw1, sw2 = connection.transmit(applet_select)
         print("SELECT")
@@ -242,18 +279,19 @@ class Client:
         # TODO: Break conversion from DER into separate function
         pubkey_h_arr = get_public_bytes(self.Q_h)
 
-        datalen = len(self.id) + len(pubkey_h_arr)
+        datalen = len(self.id) + len(pubkey_h_arr) + 1
         print("datalen: " + str(datalen))
 
-        auth_request = [0x80,  # CLA 80 - user defined .
-                        0x20,  # INS 20 - Auth request.
-                        len(pubkey_h_arr),  # P1 - length of host public key in bytes
-                        0x00,  # P2  00 for normal, 01 for print val
-                        datalen]  # Total data length
-        # Data is host ID followed by ephemeral host public key.
-        auth_request.extend(self.id)
-        auth_request.extend(pubkey_h_arr)
-        auth_request.append(32 + max_cvc_len)  # 16B nonce, 16B C-MAC, CVC expected.
+        # TODO: Check if record exists, if so, set cb=PB
+        cb = PB_INIT
+        print(cb)
+
+        in_dat = [b for b in self.id]
+        in_dat.extend(pubkey_h_arr)
+        in_dat.append(cb)
+        print(len(in_dat))
+        # CLA 80 = user defined. INS 20 = Auth request. P1 is public key length.
+        auth_request = create_apdu(0x80, 0x20, len(pubkey_h_arr), 0x00, in_dat, 255)
         print("Auth request: " + str(auth_request))
 
         start = time.time()
@@ -263,42 +301,53 @@ class Client:
         print("Data length: " + str(len(data)))
         print("Data: " + str(data))
         print(hex(sw1) + ", " + hex(sw2))
-        nonce, mac, cvc = extract_fields(data)
+        cb, nonce, mac, EncGuid, iccID = extract_fields(data)
         print("Nonce: " + str(nonce))
         print("MAC: " + str(mac))
-        print("CVC: " + str(cvc))
+        print("ICC ID: " + str(iccID))
         print("Time taken: " + str(end - start) + " seconds")
-        self.authenticate(nonce, mac, cvc)
+        self.authenticate(cb, nonce, mac, EncGuid, iccID)
 
     # Action taken when response from card received.
-    def authenticate(self, nonce_c, authcryptogram, c_c):
+    # Function performs functionality of the SAM in the protocol.
+    def authenticate(self, CB_card, nonce_c, authcryptogram, EncGuid, iccID):
         # Obtain card ID. id_c represented as bytes object.
         # TODO
+        print("entered Authenticate()")
+        global PB
+        global PB_INIT
+        global RET_GUID
+        global NO_PB
+        if CB_card & 0x0F == PB:
+            # ICC computed new Z
+            id_c = int.from_bytes(bytes(iccID), byteorder='big')
+            # TODO: Maybe should load CVC from store to get issuerID, card_pubkey.
+            # TODO: Check for record [id_c, PBaddress]
+            if registered(id_c) is False:
+                # PB was chosen but no matching register entry exists.
+                # zeroise privkey
+                self.d_h = 0
+                # return CB_H = PB_INIT (Restart OPACITY)
+                print("RETURN PB_INIT")
+                return PB_INIT
+        else:
+            id_c = int.from_bytes(truncate8(hashfun(bytes(iccID))), byteorder='big')
+            cvc = iccID
+            if self.store.exists(id_c) is False:
+                # TODO: Should this really only be completed if no register entry?
+                # Surely it doesn't matter whether there's a register entry if
+                # the card didn't specify that it supports PB?
 
-        id_c = truncate8(hashfun(bytes(c_c)))
-        print("Card ID: " + str([i for i in id_c]))
+                # If not registered,
+                self.cvc_extract(cvc)
+                privkey = get_private_bytes(self.d_h)
+                z = ec_dh(privkey, self.card_pubkey)
+                self.d_h = 0
 
-        # TODO
-        self.cvc_extract(c_c)
-
-        # Derive shared secret from card's public key, host private key.
-        # TODO: should I use TraditionalOpenSSL encoding format?
-        privkey = get_private_bytes(self.d_h)
-
-        print("Host Private key: " + str([i for i in privkey]))
-        print("Length: " + str(len(privkey)))
-        print()
-
-        #pub = self.get_public_bytes()
-        #print("Host Public key: " + str([i for i in pub]))
-        print("Card pubkey: " + str([i for i in self.card_pubkey]))
-        z = ec_dh(privkey, self.card_pubkey)
-
-        print("Host secret: " + str([i for i in z]))
-
-
-        # zeroise d_h
-        self.d_h = 0
+        # TODO: Surely this should only be in the CB_card == PB case?
+        if self.store.exists(id_c):
+            # Obtain z from id_c PB registry
+            z = self.store.getSecret(id_c)
 
         # keydatalen length of secret keying material to be derived. Limited by
         # hashlen.
@@ -318,16 +367,34 @@ class Client:
 
         # If fails, throw auth error.
         pubkey_bytes = self.Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
-        inputs = concat(bytearray("KC_1_V", 'utf-8'), id_c, self.id, truncate16(pubkey_bytes))
+        inputs = concat(bytearray("KC_1_V", 'utf-8'), id_c.to_bytes(8, byteorder='big'), self.id, truncate16(pubkey_bytes))
 
         # TODO: Catch exception and handle.
         checkval = verify_mac(authcryptogram, inputs, sk_cfrm)
-        print(checkval)
-        # check(authcryptogram, checkval)
+        print("AUTH SUCCESS: " + str(checkval))
 
         # zeroise
         sk_cfrm = 0
 
+        if CB_card & PB_INIT:
+            self.store.addRecord(id_c, bytes(z_next))
+
+        if CB_card & 0x0F != NO_PB:
+            CB_host = PB
+        else:
+            CB_host = NO_PB
+
+        if CB_card & RET_GUID:
+            # TODO
+            # Unsure about the following:
+            #guid = EncGuid XOR AES(sk_enc, IV)
+            #build C_ICC from C_ICC* amd GUID
+            #Verify C_ICC signature using ECDSA
+            CB_H |= RET_GUID
+        else:
+            guid = None
+
+        return CB_host, guid
         # For additional commands use secure messaging with SKmac and SKenc.
 
 
@@ -340,5 +407,5 @@ pubkey_h_arr = Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
 print("\n\nAUTHENTICATION PROCESS")
 
 id_h = bytes([0, 0, 0, 0, 0, 0, 0, 1])
-cl = Client(id_h)
+cl = Client(id_h, "store.xml")
 cl.process_card()
