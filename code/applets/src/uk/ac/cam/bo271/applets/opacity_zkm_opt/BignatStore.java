@@ -15,7 +15,7 @@ public class BignatStore {
     public static Bignat temp_val_8;
 
     // Max Bignat value.
-    // TODO: Try to get rid of this.
+    // Could be possible to get rid of this if absolutely necessary.
     public static Bignat max_val;
 
     public static void init(Bignat_Helper bnh) {

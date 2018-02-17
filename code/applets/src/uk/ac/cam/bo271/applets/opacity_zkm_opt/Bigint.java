@@ -42,7 +42,6 @@ public class Bigint{
     }
 
     public void subtract(Bigint other, Bignat temp) {
-        // TODO: If this is bigger
         if (this.sign == other.getSign()) {
             // Signs are equal, subtract magnitudes.
             if (this.magnitude.lesser(other.getMagnitude())) {
@@ -63,7 +62,6 @@ public class Bigint{
             }
         } else {
             // If signs are different, add magnitudes.
-            // TODO: Handle overflow.
             this.magnitude.add(other.getMagnitude());
         }
     }

@@ -145,7 +145,7 @@ public class ECDSA_SHA_256 extends Signature {
         ECPoint G_point = new ECPoint(curve, ecc.ech);
         G_point.setW(G, (short)0, (short)65);
 
-
+/*
         // Carry out the EC point multiplication and get the 32B X coordinate.
         ArithmeticFuncs.point_mult(G_point, k, BignatStore.temp_val_2, BignatStore.temp_val_3, BignatStore.temp_val_4, BignatStore.temp_val_5, BignatStore.temp_val_6, BignatStore.temp_val_7, ecc);
         ECPoint sig_point = G_point;

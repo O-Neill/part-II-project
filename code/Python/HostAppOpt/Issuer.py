@@ -100,14 +100,16 @@ def format_cvc(connection):
     encoder.write(issuerID, 0x42)
 
     encoder.write(guID, 0x5F20)
-    encoded_key = encode_key(pubkey)
 
+    encoded_key = encode_key(pubkey)
     encoder.write(encoded_key, 0x7F49)
 
     encoder.write(bytes(signature), 0x5F37)
 
     # role ID: 0x00 for card application key CVC
     encoder.write(bytes([0x00]), 0x5F4C)
+
+    print([i for i in encoder.output()])
 
     return encoder.output()
 

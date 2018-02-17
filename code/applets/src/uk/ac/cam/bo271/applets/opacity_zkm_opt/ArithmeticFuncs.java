@@ -27,7 +27,7 @@ public class ArithmeticFuncs {
 
     // Stripped-down version of egcd that only returns the x bezout coefficient.
     // Can modify to take a third argument which is the return value gcd.
-    public static void egcd(Bigint a, Bigint b, Bignat temp1, Bignat temp2, Bignat temp3, Bignat temp4, APDU apdu) {
+    public static void egcd(Bigint a, Bigint b, Bignat temp1, Bignat temp2, Bignat temp3, Bignat temp4) {
 
         // Return a = gcd, b = x (one bezout coefficient)
         Bignat q = temp1;
@@ -84,22 +84,26 @@ public class ArithmeticFuncs {
     }
 
     // When this returns, k contains its modular inverse.
-    public static void mod_inv(Bignat k, Bignat mod, Bignat temp1, Bignat temp2, Bignat temp3, Bignat temp4, Bignat temp5, APDU apdu) {
-
+    public static void mod_inv(Bignat k, Bignat mod, Bignat temp1, Bignat temp2, Bignat temp3, Bignat temp4, Bignat temp5) {
+        // If mod is one, no solution exists. Return 0.
+        if(mod.same_value(Bignat_Helper.ONE)) {
+            k.zero();
+            return;
+        }
         Bignat n = temp1;
         n.clone(mod);
-        // TODO: If mod is one, no solution exists. Return 0.
 
         Bigint k_int = new Bigint(k);
         Bigint mod_int = new Bigint(n);
 
 
-        egcd(k_int, mod_int, temp2, temp3, temp4, temp5, apdu);
+        egcd(k_int, mod_int, temp2, temp3, temp4, temp5);
         // Ensure positive
         k.mod(mod);
 
     }
 
+/*
     public static boolean at_infinity(ECPoint p) {
         // TODO: implement
         return false;
@@ -272,7 +276,7 @@ public class ArithmeticFuncs {
         Util.arrayCopy(temp, (byte)0, point, (short)0, len);
         // Not quite right. This only returns the x coordinate.
         p.setW(point, (short)0, (short)point.length);
-        /*
+
         byte[] temp_arr = new byte[65];
         p.getField(temp_arr, (short)0);
         Bignat prime = temp1;
@@ -312,7 +316,8 @@ public class ArithmeticFuncs {
         k.from_byte_array(k_bytes);
 
         return Q;
-        */
+
     }
+    */
 
 }

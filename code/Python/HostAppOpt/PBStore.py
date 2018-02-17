@@ -22,15 +22,15 @@ class Store:
         return card_id in self.bindings
 
     def getSecret(self, card_id):
-        return self.bindings[card_id]
+        return int(self.bindings[card_id])
 
     def addRecord(self, card_id, secret):
         print(self.bindings)
-        print(bytes(card_id))
+        print(card_id)
         print()
         if (self.exists(card_id)):
             return
-        self.bindings[bytes(card_id)] = secret
+        self.bindings[card_id] = secret
         newentry = ET.SubElement(self.tree.getroot(), 'binding')
         ET.SubElement(newentry, 'id').text = str(card_id)
         ET.SubElement(newentry, 'secret').text = str(int.from_bytes(secret, byteorder='big'))

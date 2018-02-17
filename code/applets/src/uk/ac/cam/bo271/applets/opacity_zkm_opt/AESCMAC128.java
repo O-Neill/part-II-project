@@ -11,13 +11,12 @@ import javacard.security.CryptoException;
 // abstract class.
 public class AESCMAC128 extends Signature {
 
+    // No point implementing these two methods.
     public short signPreComputedHash(byte[] hashBuff, short hashOff, short hashLength, byte[] sigBuff, short sigOffset) {
-        // TODO
-        return 0;
+        throw new CryptoException(CryptoException.ILLEGAL_VALUE);
     }
-
     public void setInitialDigest(byte[] initialDigestBuf, short initialDigestOffset, short initialDigestLength, byte[] digestedMsgLenBuf, short digestedMsgLenOffset, short digestedMsgLenLength) {
-        // TODO
+        throw new CryptoException(CryptoException.ILLEGAL_VALUE);
     }
 
     // Constant to be XORed with last byte in subkey generation, defined in
@@ -34,15 +33,16 @@ public class AESCMAC128 extends Signature {
     // isn't available on Java Card 3.0.4 card used.
     Cipher aesCipher;
 
-    // TODO: Initialise and use.
     private byte[] k;
     private byte[] lastBlock;
+    byte[] temp;
 
     public AESCMAC128() {
         k = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
         k1 = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
         k2 = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
         prev_block = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
+        temp = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
     }
 
     public byte[] getk2() {
@@ -52,7 +52,6 @@ public class AESCMAC128 extends Signature {
         return k1;
     }
 
-    // TODO: Can I do this easily using Bignat?
     private static void leftShiftArray(byte[] buffer) {
         if (buffer == null) {
             ISOException.throwIt((short)0x5532);
@@ -86,7 +85,6 @@ public class AESCMAC128 extends Signature {
     // Calling this method repeatedly will generate key rotations that can be
     // used as subkeys (as per the NIST 800-38B standards)
     private void subkeys(byte[] k) {
-        // TODO: Check size of k = 16
 
         // Step 2 - if leftmost bit of L is 0, k1=L<<1 else k1=(L<<1)^Rb
         byte msb = (byte) (k[0] & (byte)0x80);  // 0 or 1 depending on msb of L
@@ -118,8 +116,10 @@ public class AESCMAC128 extends Signature {
 
     // To initialise, save the key, and initialise the subkeys.
     public void init(Key key, byte mode, byte[] init_info, short off, short len) {
-        // TODO: init_info should contain anything?
-        // TODO: If mode is verify, fail. Could be implemented but no need.
+        // If mode is verify, fail. Could be implemented but no need.
+        if (mode != Signature.MODE_SIGN) {
+            throw new CryptoException(CryptoException.ILLEGAL_VALUE);
+        }
 
         // initialise CBC-MAC helper
         aesKey = (AESKey) key;
@@ -187,11 +187,6 @@ public class AESCMAC128 extends Signature {
         }
         short leadingBlocksLen = (short)(16 * leadingBlocks);
 
-
-        // TODO: Complete the last block if not complete, then feed all input
-        // into update(), then return the resulting cipher value.
-
-
         // Step 4
         if (len != 0) {
             // Get last (possibly incomplete) block from sign() input
@@ -235,8 +230,6 @@ public class AESCMAC128 extends Signature {
 
                 // Cipher the cached block (second last block).
                 //aesMAC.update(prev_block, (short)0, (short)16);
-                // TODO: replace with something less wasteful.
-                byte[] temp = new byte[16];
                 aesCipher.update(prev_block, (short)0, (short)16, temp, (short)0);
             }
         }
@@ -247,16 +240,12 @@ public class AESCMAC128 extends Signature {
         return 16;
     }
 
-    // TODO: Cipher the second last one. The last one may be the last of the
-    // message.
     public void update(byte[] input, short inOffset, short len) {
 
         // input should be positive multiple of block size
         if (len == 0 || (len % 16 != 0)) {
             CryptoException.throwIt(CryptoException.ILLEGAL_USE);
         }
-        // TODO: replace with something less wasteful.
-        byte[] temp = new byte[len];
 
         // If this is not the first data seen, cipher the previously seen
         // block.

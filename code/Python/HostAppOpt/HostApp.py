@@ -8,7 +8,6 @@ import PBStore
 
 from smartcard.CardRequest import CardRequest
 
-import cryptography
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import cmac
@@ -65,16 +64,6 @@ def hashfun(val):
     return hash_obj.digest()
 
 
-# Extract leftmost 8 bytes of data. (input is string, likely 256 bits)
-def truncate8(val):
-    # TODO: Check length
-    return(val[0:8])
-
-
-def truncate16(val):
-    return(val[0:16])
-
-
 # Compute shared secret, Diffie-Hellman style.
 # Both ends use secret keys to encrypt same data in different order to obtain
 # shared secret.
@@ -88,8 +77,7 @@ def ec_dh(priv_host, pub_card):
 
     z = Q * d
     secret = z.x
-    z_bytes = secret.to_bytes(length=(secret.bit_length() + 7) // 8, byteorder='big')
-    return z_bytes
+    return secret
 
 
 def concat(a, b, c, d):
@@ -102,21 +90,10 @@ def concat(a, b, c, d):
 
 # NIST 800-38B AES-128 based MAC algorithm.
 # TODO: Ensure it is AES 128 and not some other AES
-def verify_mac(mac, msg, sk_cfrm):
-    d = cmac.CMAC(algorithms.AES(bytes(sk_cfrm)), backend=default_backend())
-    d.update(bytes(msg))
-    mac = d.finalize()
-
+def eval_mac(msg, sk_cfrm):
     c = cmac.CMAC(algorithms.AES(bytes(sk_cfrm)), backend=default_backend())
     c.update(bytes(msg))
-
-    # TODO: This throws exception if false. Handle somewhere.
-    # Raises InvalidSignature or TypeError.
-    try:
-        c.verify(bytes(mac))
-        return True
-    except cryptography.exceptions.InvalidSignature:
-        return False
+    return c.finalize()
 
 
 # Input byte array (obtained from APDU), split into 16B N_c, 128b mac, C_c
@@ -279,11 +256,8 @@ class Client:
         # TODO: Break conversion from DER into separate function
         pubkey_h_arr = get_public_bytes(self.Q_h)
 
-        datalen = len(self.id) + len(pubkey_h_arr) + 1
-        print("datalen: " + str(datalen))
-
         # TODO: Check if record exists, if so, set cb=PB
-        cb = PB_INIT
+        cb = NO_PB
         print(cb)
 
         in_dat = [b for b in self.id]
@@ -292,21 +266,15 @@ class Client:
         print(len(in_dat))
         # CLA 80 = user defined. INS 20 = Auth request. P1 is public key length.
         auth_request = create_apdu(0x80, 0x20, len(pubkey_h_arr), 0x00, in_dat, 255)
-        print("Auth request: " + str(auth_request))
 
         start = time.time()
         data, sw1, sw2 = connection.transmit(auth_request)
         end = time.time()
         print("AUTHENTICATE")
-        print("Data length: " + str(len(data)))
-        print("Data: " + str(data))
         print(hex(sw1) + ", " + hex(sw2))
         cb, nonce, mac, EncGuid, iccID = extract_fields(data)
-        print("Nonce: " + str(nonce))
-        print("MAC: " + str(mac))
-        print("ICC ID: " + str(iccID))
-        print("Time taken: " + str(end - start) + " seconds")
-        self.authenticate(cb, nonce, mac, EncGuid, iccID)
+        print("Time taken for card: " + str(end - start) + " seconds")
+        return self.authenticate(cb, nonce, mac, EncGuid, iccID)
 
     # Action taken when response from card received.
     # Function performs functionality of the SAM in the protocol.
@@ -319,11 +287,14 @@ class Client:
         global RET_GUID
         global NO_PB
         if CB_card & 0x0F == PB:
-            # ICC computed new Z
+            # ICC using previously saved Z
+            # S3
+            id_c_arr = bytes(iccID)
             id_c = int.from_bytes(bytes(iccID), byteorder='big')
             # TODO: Maybe should load CVC from store to get issuerID, card_pubkey.
-            # TODO: Check for record [id_c, PBaddress]
-            if registered(id_c) is False:
+
+            # S4, S5, S6
+            if self.store.exists(id_c) is False:
                 # PB was chosen but no matching register entry exists.
                 # zeroise privkey
                 self.d_h = 0
@@ -331,13 +302,18 @@ class Client:
                 print("RETURN PB_INIT")
                 return PB_INIT
         else:
-            id_c = int.from_bytes(truncate8(hashfun(bytes(iccID))), byteorder='big')
+            # ICC computed a new Z
+            # S2
+            id_c_arr = hashfun(bytes(iccID))[:8]
+            id_c = int.from_bytes(id_c_arr, byteorder='big')
             cvc = iccID
+
             if self.store.exists(id_c) is False:
                 # TODO: Should this really only be completed if no register entry?
                 # Surely it doesn't matter whether there's a register entry if
                 # the card didn't specify that it supports PB?
 
+                # S8, S9
                 # If not registered,
                 self.cvc_extract(cvc)
                 privkey = get_private_bytes(self.d_h)
@@ -345,43 +321,69 @@ class Client:
                 self.d_h = 0
 
         # TODO: Surely this should only be in the CB_card == PB case?
+        # S10
         if self.store.exists(id_c):
             # Obtain z from id_c PB registry
             z = self.store.getSecret(id_c)
+            print("Accessed PB registry")
+
+        pubkey_bytes = self.Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+        decoder = asn1.Decoder()
+        decoder.start(pubkey_bytes)
+        decoder.enter()
+        decoder.read()
+        tag, val = decoder.read()
+        pubkey_bytes = val[1:]
 
         # keydatalen length of secret keying material to be derived. Limited by
         # hashlen.
         # info is context-specific data. See 800-56A 5.8.1.2.
-        keydatalen = 5 * 16
-        # TODO: Use correct info.
-        info = bytes()
-        keys = kdf(z, keydatalen, info)
+        # S11
+        keydatalen = 4 * 16 + 32
+        info = bytearray(id_c_arr)
+        info.extend(self.id)
+        info.extend(bytes(pubkey_bytes[:16]))
+        info.extend(bytes(nonce_c))
+        z_bytes = z.to_bytes(length=(z.bit_length() + 7) // 8, byteorder='big')
+        keys = kdf(z_bytes, keydatalen, info)
         sk_cfrm = keys[0:16]
         sk_mac = keys[16:32]
         sk_enc = keys[32:48]
         sk_rmac = keys[48:64]
-        z_next = keys[64:80]
+        z_next = keys[64:]
 
-        # zeroise z
+        # S12 - zeroise z
         z = 0
 
+        # S13 - Verify authentication code
         # If fails, throw auth error.
-        pubkey_bytes = self.Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
-        inputs = concat(bytearray("KC_1_V", 'utf-8'), id_c.to_bytes(8, byteorder='big'), self.id, truncate16(pubkey_bytes))
 
-        # TODO: Catch exception and handle.
-        checkval = verify_mac(authcryptogram, inputs, sk_cfrm)
+        inputs = concat(bytearray("KC_1_V", 'utf-8'), id_c.to_bytes(8, byteorder='big'), self.id, pubkey_bytes[:16])
+
+        # TODO: Catch exception and handle by returning AUTH_ERROR
+        print("Card CMAC")
+        print(authcryptogram)
+        host_cmac = [i for i in eval_mac(inputs, sk_cfrm)]
+        print("Host CMAC")
+        print(host_cmac)
+        checkval = (host_cmac == authcryptogram)
         print("AUTH SUCCESS: " + str(checkval))
 
-        # zeroise
+        # S14 - zeroise
         sk_cfrm = 0
 
         if CB_card & PB_INIT:
+            # S15
+            print("Adding record")
+            print("ID: " + str(id_c))
+            print("Z: " + str(z_next))
             self.store.addRecord(id_c, bytes(z_next))
 
         if CB_card & 0x0F != NO_PB:
+            # S16
             CB_host = PB
         else:
+            # S17
             CB_host = NO_PB
 
         if CB_card & RET_GUID:
@@ -390,11 +392,14 @@ class Client:
             #guid = EncGuid XOR AES(sk_enc, IV)
             #build C_ICC from C_ICC* amd GUID
             #Verify C_ICC signature using ECDSA
+            # S21
             CB_H |= RET_GUID
         else:
+            # S22
             guid = None
 
-        return CB_host, guid
+        # S23
+        return id_c, CB_host, guid
         # For additional commands use secure messaging with SKmac and SKenc.
 
 
@@ -408,4 +413,7 @@ print("\n\nAUTHENTICATION PROCESS")
 
 id_h = bytes([0, 0, 0, 0, 0, 0, 0, 1])
 cl = Client(id_h, "store.xml")
-cl.process_card()
+start = time.time()
+id_c = cl.process_card()[0]
+print("Time taken overall: " + str(time.time() - start))
+print("card id: " + str(id_c))
