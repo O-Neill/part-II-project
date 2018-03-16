@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6210 64-bit) (preloaded format=pdflatex 2017.2.23)  5 FEB 2018 00:04
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6210 64-bit) (preloaded format=pdflatex 2017.2.23)  16 MAR 2018 00:32
 entering extended mode
 **./dissertation.tex
 (dissertation.tex
@@ -56,29 +56,137 @@ Overfull \hbox (2.61107pt too wide) in paragraph at lines 34--55
 $[]$ $[]$ 
  []
 
-[2] [3] [4] [5]
-Underfull \hbox (badness 10000) in paragraph at lines 99--111
+[2] [3] (dissertation.toc [4])
+\tf@toc=\write3
+\openout3 = `dissertation.toc'.
+
+ [5]
+Underfull \hbox (badness 10000) in paragraph at lines 86--87
 
  []
 
-[6] [7] [8] [9] [10] [11] [12] (dissertation.aux) ) 
+[6]
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 118.
+
+ ("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\base\omscmr.fd"
+File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <12> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 118.
+
+Underfull \hbox (badness 10000) in paragraph at lines 130--131
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 132--133
+
+ []
+
+[7] [8]
+Underfull \hbox (badness 10000) in paragraph at lines 171--175
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 178--179
+
+ []
+
+[9]
+Underfull \hbox (badness 10000) in paragraph at lines 194--195
+
+ []
+
+[10]
+Overfull \hbox (3.9125pt too wide) in paragraph at lines 225--228
+\OT1/cmr/m/n/12 code pro-duced (i.e. non-JCMathLib Java Card code in-clud-ing C
+MAC and ECDSA. (TODO:
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 225--228
+
+ []
+
+[11]
+Underfull \hbox (badness 10000) in paragraph at lines 232--234
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 237--238
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 249--253
+
+ []
+
+[12]
+Underfull \hbox (badness 10000) in paragraph at lines 263--264
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 265--267
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 268--269
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 270--271
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 272--273
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 274--275
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 276--277
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 280--281
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 288--290
+
+ []
+
+[13] [14] [15] [16] [17] (dissertation.aux) ) 
 Here is how much of TeX's memory you used:
- 253 strings out of 493333
- 3131 string characters out of 3131011
- 55255 words of memory out of 3000000
- 3850 multiletter control sequences out of 15000+200000
+ 273 strings out of 493333
+ 3493 string characters out of 3131011
+ 58255 words of memory out of 3000000
+ 3864 multiletter control sequences out of 15000+200000
  7894 words of font info for 28 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 22i,4n,19p,381b,107s stack positions out of 5000i,500n,10000p,200000b,50000s
-<C:/Users/Ben/AppData/Local/
-Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/Ben/App
-Data/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Use
-rs/Ben/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr17.p
-fb><C:/Users/Ben/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/
-cm/cmr8.pfb>
-Output written on dissertation.pdf (12 pages, 70636 bytes).
+ 22i,5n,19p,494b,142s stack positions out of 5000i,500n,10000p,200000b,50000s
+<C:/Users/Ben/AppData/Local/Progra
+ms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/Ben/AppData/L
+ocal/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/Ben
+/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr17.pfb><C:
+/Users/Ben/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cms
+y10.pfb>
+Output written on dissertation.pdf (17 pages, 83625 bytes).
 PDF statistics:
- 57 PDF objects out of 1000 (max. 8388607)
+ 73 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -1,0 +1,42 @@
+\contentsline {section}{\numberline {1}Introduction}{6}
+\contentsline {subsection}{\numberline {1.1}Smartcards}{6}
+\contentsline {subsection}{\numberline {1.2}Asymmetric vs Symmetric Cryptography}{7}
+\contentsline {subsection}{\numberline {1.3}MIFARE classic problems}{7}
+\contentsline {subsection}{\numberline {1.4}Project Outcome}{7}
+\contentsline {section}{\numberline {2}Preparation}{7}
+\contentsline {subsection}{\numberline {2.1}Requirements analysis}{8}
+\contentsline {subsection}{\numberline {2.2}Preparation strategy outline}{8}
+\contentsline {subsection}{\numberline {2.3}ISO7816}{9}
+\contentsline {subsubsection}{\numberline {2.3.1}APDUs}{9}
+\contentsline {subsubsection}{\numberline {2.3.2}Other}{9}
+\contentsline {subsection}{\numberline {2.4}Asymmetric Crypto}{9}
+\contentsline {subsection}{\numberline {2.5}Current uni smartcards}{9}
+\contentsline {subsection}{\numberline {2.6}Identify tools}{9}
+\contentsline {subsubsection}{\numberline {2.6.1}Java card}{9}
+\contentsline {subsubsection}{\numberline {2.6.2}Card readers}{9}
+\contentsline {subsubsection}{\numberline {2.6.3}ANT}{10}
+\contentsline {subsubsection}{\numberline {2.6.4}GPShell}{10}
+\contentsline {subsection}{\numberline {2.7}Development}{10}
+\contentsline {section}{\numberline {3}Implementation}{11}
+\contentsline {subsection}{\numberline {3.1}Protocols}{11}
+\contentsline {subsubsection}{\numberline {3.1.1}EC Crypto}{11}
+\contentsline {subsubsection}{\numberline {3.1.2}ASN1}{11}
+\contentsline {subsubsection}{\numberline {3.1.3}Other}{11}
+\contentsline {subsection}{\numberline {3.2}Libraries}{11}
+\contentsline {subsubsection}{\numberline {3.2.1}Host-side libraries}{11}
+\contentsline {subsubsection}{\numberline {3.2.2}Card-side libraries}{11}
+\contentsline {subsection}{\numberline {3.3}Core implementation}{11}
+\contentsline {subsubsection}{\numberline {3.3.1}Smartcard code}{11}
+\contentsline {subsubsection}{\numberline {3.3.2}Host code}{12}
+\contentsline {subsection}{\numberline {3.4}Optimisations}{12}
+\contentsline {subsection}{\numberline {3.5}Overall design}{12}
+\contentsline {section}{\numberline {4}Evaluation}{13}
+\contentsline {subsection}{\numberline {4.1}Assessment of success}{13}
+\contentsline {subsection}{\numberline {4.2}Breakdown of results}{13}
+\contentsline {section}{\numberline {5}Conclusions}{14}
+\contentsline {subsection}{\numberline {5.1}Achievements}{14}
+\contentsline {subsection}{\numberline {5.2}Knowledge Gained}{14}
+\contentsline {subsection}{\numberline {5.3}Future work}{14}
+\contentsline {section}{\numberline {6}Bibliography}{15}
+\contentsline {section}{\numberline {7}Appendices}{16}
+\contentsline {section}{\numberline {8}Index}{17}

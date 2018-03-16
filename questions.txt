@@ -1,0 +1,3 @@
+Point of returning enc_guid?
+Would terminals discriminate based on a card ID list?
+Could attacker spoof a CVC whose first 8B of its hash appears valid?

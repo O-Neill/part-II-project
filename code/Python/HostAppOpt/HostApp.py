@@ -231,6 +231,7 @@ class Client:
         global PB
         global PB_INIT
         global applet_id
+        global NO_PB
         cardRequest = CardRequest(timeout=None)
         cardservice = cardRequest.waitforcard()
 
@@ -258,22 +259,23 @@ class Client:
 
         # TODO: Check if record exists, if so, set cb=PB
         cb = NO_PB
-        print(cb)
 
         in_dat = [b for b in self.id]
         in_dat.extend(pubkey_h_arr)
+        print(len(pubkey_h_arr))
         in_dat.append(cb)
-        print(len(in_dat))
         # CLA 80 = user defined. INS 20 = Auth request. P1 is public key length.
         auth_request = create_apdu(0x80, 0x20, len(pubkey_h_arr), 0x00, in_dat, 255)
 
         start = time.time()
         data, sw1, sw2 = connection.transmit(auth_request)
+        print(data)
         end = time.time()
+        print("Time taken for card: " + str(end - start) + " seconds")
+        #quit(0)
         print("AUTHENTICATE")
         print(hex(sw1) + ", " + hex(sw2))
         cb, nonce, mac, EncGuid, iccID = extract_fields(data)
-        print("Time taken for card: " + str(end - start) + " seconds")
         return self.authenticate(cb, nonce, mac, EncGuid, iccID)
 
     # Action taken when response from card received.
@@ -286,7 +288,9 @@ class Client:
         global PB_INIT
         global RET_GUID
         global NO_PB
+        print("Card CB: " + str(CB_card))
         if CB_card & 0x0F == PB:
+            print("ICC using previously saved Z")
             # ICC using previously saved Z
             # S3
             id_c_arr = bytes(iccID)
@@ -301,31 +305,33 @@ class Client:
                 # return CB_H = PB_INIT (Restart OPACITY)
                 print("RETURN PB_INIT")
                 return PB_INIT
+            else:
+                # In the standard this was done in every case, but this is wrong
+                # as it means the card accesses the PB reg even if PB not used.
+                # Moved here to fix the issue.
+                # S10
+                # Obtain z from id_c PB registry
+                z = self.store.getSecret(id_c)
+                print("Accessed PB registry")
         else:
+            print("ICC computed a new Z")
             # ICC computed a new Z
             # S2
             id_c_arr = hashfun(bytes(iccID))[:8]
             id_c = int.from_bytes(id_c_arr, byteorder='big')
             cvc = iccID
 
-            if self.store.exists(id_c) is False:
-                # TODO: Should this really only be completed if no register entry?
-                # Surely it doesn't matter whether there's a register entry if
-                # the card didn't specify that it supports PB?
+            print("Computing a new Z")
+            # TODO: Should this really only be completed if no register entry?
+            # Surely it doesn't matter whether there's a register entry if
+            # the card didn't specify that it supports PB?
 
-                # S8, S9
-                # If not registered,
-                self.cvc_extract(cvc)
-                privkey = get_private_bytes(self.d_h)
-                z = ec_dh(privkey, self.card_pubkey)
-                self.d_h = 0
-
-        # TODO: Surely this should only be in the CB_card == PB case?
-        # S10
-        if self.store.exists(id_c):
-            # Obtain z from id_c PB registry
-            z = self.store.getSecret(id_c)
-            print("Accessed PB registry")
+            # S8, S9
+            # If not registered,
+            self.cvc_extract(cvc)
+            privkey = get_private_bytes(self.d_h)
+            z = ec_dh(privkey, self.card_pubkey)
+            self.d_h = 0
 
         pubkey_bytes = self.Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
         decoder = asn1.Decoder()
@@ -414,6 +420,9 @@ print("\n\nAUTHENTICATION PROCESS")
 id_h = bytes([0, 0, 0, 0, 0, 0, 0, 1])
 cl = Client(id_h, "store.xml")
 start = time.time()
-id_c = cl.process_card()[0]
+result = cl.process_card()
+if result == PB_INIT:
+    quit(0)
+id_c = result[0]
 print("Time taken overall: " + str(time.time() - start))
 print("card id: " + str(id_c))
