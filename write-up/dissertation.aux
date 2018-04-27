@@ -1,43 +1,103 @@
 \relax 
-\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{6}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Smartcards}{6}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Asymmetric vs Symmetric Cryptography}{7}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}MIFARE classic problems}{7}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}Project Outcome}{7}}
-\@writefile{toc}{\contentsline {section}{\numberline {2}Preparation}{7}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Requirements analysis}{8}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Preparation strategy outline}{8}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}ISO7816}{9}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.1}APDUs}{9}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.2}Other}{9}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Asymmetric Crypto}{9}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Current uni smartcards}{9}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}Identify tools}{9}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.6.1}Java card}{9}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.6.2}Card readers}{9}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.6.3}ANT}{10}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.6.4}GPShell}{10}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.7}Development}{10}}
-\@writefile{toc}{\contentsline {section}{\numberline {3}Implementation}{11}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Protocols}{11}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.1}EC Crypto}{11}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.2}ASN1}{11}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.3}Other}{11}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Libraries}{11}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Host-side libraries}{11}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}Card-side libraries}{11}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Core implementation}{11}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.1}Smartcard code}{11}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.2}Host code}{12}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Optimisations}{12}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Overall design}{12}}
-\@writefile{toc}{\contentsline {section}{\numberline {4}Evaluation}{13}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Assessment of success}{13}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Breakdown of results}{13}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusions}{14}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Achievements}{14}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Knowledge Gained}{14}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Future work}{14}}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Bibliography}{15}}
-\@writefile{toc}{\contentsline {section}{\numberline {7}Appendices}{16}}
-\@writefile{toc}{\contentsline {section}{\numberline {8}Index}{17}}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Smartcards}{7}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {1.1.1}MIFARE classic}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Asymmetric vs Symmetric Cryptography}{8}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {1.2.1}As applied to smartcard access control systems}{8}}
+\newlabel{subsec:asymmetric_smartcards}{{1.2.1}{8}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Hardware used}{9}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {1.3.1}Java Cards}{10}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}Related Work}{10}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.5}Project Outcome}{11}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Preparation}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Starting point}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Requirements analysis}{12}}
+\newlabel{sec:requirements}{{2.2}{12}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}MIFARE Classic problems}{13}}
+\newlabel{sec:mifare_problems}{{2.3}{13}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.1}Attacks}{14}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.2}Problems with successors}{15}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Preparation strategy outline}{15}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.1}Project structure}{16}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.2}Testing}{16}}
+\newlabel{subsec:testing}{{2.4.2}{16}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Safety case}{16}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}ISO7816}{17}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.6.1}Application Identifiers}{17}}
+\newlabel{subsec:aid}{{2.6.1}{17}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.6.2}APDUs}{18}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.7}Development Preparation}{19}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.7.1}Version control}{19}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.7.2}Java Card 2.2.2 Build process}{19}}
+\newlabel{build_process}{{2.7.2}{19}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.7.3}Differences in Java Card 3.0.4 Build Process}{20}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.7.4}Uploading and running applets}{21}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.7.5}Practice}{21}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.8}Host to Card interface}{22}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.8.1}OpenCard Framework}{22}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.8.2}PCSC}{23}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.8.3}Python PC/SC wrapper}{23}}
+\newlabel{subsec:python_pcsc}{{2.8.3}{23}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Implementation}{24}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Chosen Protocol - opacity ZKM}{24}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.1}Brief overview}{24}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.2}EC Crypto}{24}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.3}ECDH}{25}}
+\newlabel{subsec:diffie_hellman}{{3.1.3}{25}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.4}ECDSA}{25}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.5}ASN1}{26}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.6}CMAC}{26}}
+\newlabel{subsec:cmac}{{3.1.6}{26}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.7}Key derivation}{28}}
+\newlabel{subsec:kdf}{{3.1.7}{28}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Java Card Protocol Implementation}{28}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Program structure}{28}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}CMAC}{29}}
+\newlabel{cmac_impl}{{3.2.2}{29}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.3}ECDH}{29}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Host-side implementation}{30}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.3.1}ECDH}{30}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Certificate issuing}{30}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.1}Certificate structure}{31}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.2}Certificate generation}{32}}
+\newlabel{subsec:certificates}{{3.4.2}{32}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Authorization Options}{32}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.1}Multiple root keys and Issuer Identification Numbers}{33}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.2}GUID}{34}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.3}Card ID}{35}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.4}Public Key}{36}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.5.5}Authorization implementation}{36}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Optimisations}{37}}
+\newlabel{sec:optimisations}{{3.6}{37}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.6.1}Persistent Binding}{37}}
+\newlabel{subsec:pb}{{3.6.1}{37}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.6.2}Other optimisations}{37}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Libraries used in implementation}{37}}
+\newlabel{subsec:libraries}{{3.7}{37}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8}Change in versions}{38}}
+\newlabel{subsec:version_change}{{3.8}{38}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Evaluation}{40}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Evaluation of success criteria}{40}}
+\newlabel{sec:success_criteria}{{4.1}{40}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Security analysis}{41}}
+\newlabel{sec:security_analysis}{{4.2}{41}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.1}Discussion of possible failures}{42}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.2}PB entry storage}{43}}
+\newlabel{subsec:pb_storage}{{4.2.2}{43}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Timing analysis}{44}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.1}Results}{44}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Evaluation of Implementation Decisions}{45}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.4.1}Choice of languages and developing environment}{45}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.4.2}Choice of protocol}{45}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.4.3}Certificate issuing and authorisation}{46}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusions}{47}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Achievements}{47}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Knowledge and Experience Gained}{47}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}What would have been done differently}{47}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Future work}{48}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Bibliography}{49}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Appendices}{50}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Appendix A - Opacity with Zero Key Management (ZKM)}{51}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Appendix B - Opacity with Zero Key Management (ZKM-Optimised)}{52}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Appendix C - CVC format}{53}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Index}{55}}

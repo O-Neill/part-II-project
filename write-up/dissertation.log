@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6210 64-bit) (preloaded format=pdflatex 2017.2.23)  16 MAR 2018 00:32
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (MiKTeX 2.9.6210 64-bit) (preloaded format=pdflatex 2017.2.23)  25 APR 2018 22:18
 entering extended mode
 **./dissertation.tex
 (dissertation.tex
@@ -27,166 +27,395 @@ Package: a4wide 1994/08/30
 ("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\ntgclass\a4.sty"
 Package: a4 2004/04/15 v1.2g A4 based page layout
 ))
-(dissertation.aux)
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics\graphicx.st
+y"
+Package: graphicx 2014/10/28 v1.0g Enhanced LaTeX Graphics (DPC,SPQR)
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics\keyval.sty"
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics\graphics.st
+y"
+Package: graphics 2016/10/09 v1.0u Standard LaTeX Graphics (DPC,SPQR)
+ ("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics\trig.sty"
+Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
+)
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics-cfg\graphic
+s.cfg"
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 99.
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics-def\pdftex.
+def"
+File: pdftex.def 2017/01/12 v0.06k Graphics/color for pdfTeX
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\infwarerr
+.sty"
+Package: infwarerr 2016/05/16 v1.4 Providing info/warning/error messages (HO)
+)
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\ltxcmds.s
+ty"
+Package: ltxcmds 2016/05/16 v1.23 LaTeX kernel commands for general use (HO)
+)
+\Gread@gobject=\count87
+))
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
+)
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsfonts\amssymb.sty
+"
+Package: amssymb 2013/01/14 v3.01 AMS font symbols
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsfonts\amsfonts.st
+y"
+Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
+\@emptytoks=\toks15
+\symAMSa=\mathgroup4
+\symAMSb=\mathgroup5
+LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
+(Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
+))
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsmath\amsmath.sty"
+Package: amsmath 2016/11/05 v2.16a AMS math features
+\@mathmargin=\skip43
+For additional information on amsmath, use the `?' option.
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsmath\amstext.sty"
+Package: amstext 2000/06/29 v2.01 AMS text
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsmath\amsgen.sty"
+File: amsgen.sty 1999/11/30 v2.0 generic functions
+\@emptytoks=\toks16
+\ex@=\dimen105
+)) ("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsmath\amsbsy.st
+y"
+Package: amsbsy 1999/11/29 v1.2d Bold Symbols
+\pmbraise@=\dimen106
+) ("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsmath\amsopn.sty
+"
+Package: amsopn 2016/03/08 v2.02 operator names
+)
+\inf@bad=\count88
+LaTeX Info: Redefining \frac on input line 213.
+\uproot@=\count89
+\leftroot@=\count90
+LaTeX Info: Redefining \overline on input line 375.
+\classnum@=\count91
+\DOTSCASE@=\count92
+LaTeX Info: Redefining \ldots on input line 472.
+LaTeX Info: Redefining \dots on input line 475.
+LaTeX Info: Redefining \cdots on input line 596.
+\Mathstrutbox@=\box26
+\strutbox@=\box27
+\big@size=\dimen107
+LaTeX Font Info:    Redeclaring font encoding OML on input line 712.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 713.
+\macc@depth=\count93
+\c@MaxMatrixCols=\count94
+\dotsspace@=\muskip10
+\c@parentequation=\count95
+\dspbrk@lvl=\count96
+\tag@help=\toks17
+\row@=\count97
+\column@=\count98
+\maxfields@=\count99
+\andhelp@=\toks18
+\eqnshift@=\dimen108
+\alignsep@=\dimen109
+\tagshift@=\dimen110
+\tagwidth@=\dimen111
+\totwidth@=\dimen112
+\lineht@=\dimen113
+\@envbody=\toks19
+\multlinegap=\skip44
+\multlinetaggap=\skip45
+\mathdisplay@stack=\toks20
+LaTeX Info: Redefining \[ on input line 2817.
+LaTeX Info: Redefining \] on input line 2818.
+) (dissertation.aux)
 \openout1 = `dissertation.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
- [1
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\context\base\supp-pdf.mkii
+"
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count100
+\scratchdimen=\dimen114
+\scratchbox=\box28
+\nofMPsegments=\count101
+\nofMParguments=\count102
+\everyMPshowfont=\toks21
+\MPscratchCnt=\count103
+\MPscratchDim=\dimen115
+\MPnumerator=\count104
+\makeMPintoPDFobject=\count105
+\everyMPtoPDFconversion=\toks22
+)
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\pdftexcmd
+s.sty"
+Package: pdftexcmds 2016/05/21 v0.22 Utility functions of pdfTeX for LuaTeX (HO
+)
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\ifluatex.
+sty"
+Package: ifluatex 2016/05/16 v1.4 Provides the ifluatex switch (HO)
+Package ifluatex Info: LuaTeX not detected.
+)
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\ifpdf.sty
+"
+Package: ifpdf 2016/05/14 v3.1 Provides the ifpdf switch
+)
+Package pdftexcmds Info: LuaTeX not detected.
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+)
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\oberdiek\epstopdf-ba
+se.sty"
+Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\oberdiek\grfext.sty"
+Package: grfext 2016/05/16 v1.2 Manage graphics extensions (HO)
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\kvdefinek
+eys.sty"
+Package: kvdefinekeys 2016/05/16 v1.4 Define keys (HO)
+))
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\oberdiek\kvoptions.s
+ty"
+Package: kvoptions 2016/05/16 v3.12 Key value format for package options (HO)
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\kvsetkeys
+.sty"
+Package: kvsetkeys 2016/05/16 v1.17 Key value parser (HO)
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\etexcmds.
+sty"
+Package: etexcmds 2016/05/16 v1.6 Avoid name clashes with e-TeX commands (HO)
+Package etexcmds Info: Could not find \expanded.
+(etexcmds)             That can mean that you are not using pdfTeX 1.50 or
+(etexcmds)             that some package has redefined \expanded.
+(etexcmds)             In the latter case, load this package earlier.
+)))
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+38.
+Package grfext Info: Graphics extension search list:
+(grfext)             [.png,.pdf,.jpg,.mps,.jpeg,.jbig2,.jb2,.PNG,.PDF,.JPG,.JPE
+G,.JBIG2,.JB2,.eps]
+(grfext)             \AppendGraphicsExtensions on input line 456.
+) [1
 
 {C:/Users/Ben/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}]
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <12> on input line 44.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 44.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 44.
+LaTeX Font Info:    Try loading font information for U+msa on input line 48.
 
-Overfull \hbox (2.61107pt too wide) in paragraph at lines 34--55
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsfonts\umsa.fd"
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Try loading font information for U+msb on input line 48.
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsfonts\umsb.fd"
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+)
+Overfull \hbox (2.61107pt too wide) in paragraph at lines 38--59
 $[]$ $[]$ 
  []
 
-[2] [3] (dissertation.toc [4])
+[2] [3] (dissertation.toc [4] [5])
 \tf@toc=\write3
 \openout3 = `dissertation.toc'.
 
- [5]
-Underfull \hbox (badness 10000) in paragraph at lines 86--87
+ [6] [7]
+Missing character: There is no ‚ in font cmr12!
+Missing character: There is no Ä in font cmr12!
+Missing character: There is no ô in font cmr12!
+Missing character: There is no ‚ in font cmr12!
+Missing character: There is no Ä in font cmr12!
+Missing character: There is no ô in font cmr12!
+ [8]
+Missing character: There is no ‚ in font cmr12!
+Missing character: There is no Ä in font cmr12!
+Missing character: There is no ô in font cmr12!
+Missing character: There is no ‚ in font cmr12!
+Missing character: There is no Ä in font cmr12!
+Missing character: There is no ô in font cmr12!
+Missing character: There is no ‚ in font cmr12!
+Missing character: There is no Ä in font cmr12!
+Missing character: There is no ô in font cmr12!
 
- []
+<introduction/hardware.jpg, id=30, 5331.92pt x 2999.205pt>
+File: introduction/hardware.jpg Graphic file (type jpg)
 
-[6]
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 118.
+<use introduction/hardware.jpg>
+Package pdftex.def Info: introduction/hardware.jpg used on input line 158.
+(pdftex.def)             Requested size: 266.61162pt x 149.96902pt.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 166.
 
- ("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\base\omscmr.fd"
+
+("C:\Users\Ben\AppData\Local\Programs\MiKTeX 2.9\tex\latex\base\omscmr.fd"
 File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <12> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 118.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 166.
 
-Underfull \hbox (badness 10000) in paragraph at lines 130--131
+[9 <./introduction/hardware.jpg>]
+Missing character: There is no ‚ in font cmr12!
+Missing character: There is no Ä in font cmr12!
+Missing character: There is no ú in font cmr12!
+Missing character: There is no ‚ in font cmr12!
+Missing character: There is no Ä in font cmr12!
+Missing character: There is no ù in font cmr12!
+Missing character: There is no ‚ in font cmr12!
+Missing character: There is no Ä in font cmr12!
+Missing character: There is no ô in font cmr12!
+Missing character: There is no ‚ in font cmr12!
+Missing character: There is no Ä in font cmr12!
+Missing character: There is no ô in font cmr12!
+ [10] [11] [12]
+<introduction/mifare_classic.jpg, id=44, 690.32906pt x 413.29407pt>
+File: introduction/mifare_classic.jpg Graphic file (type jpg)
 
+<use introduction/mifare_classic.jpg>
+Package pdftex.def Info: introduction/mifare_classic.jpg used on input line 259
+.
+(pdftex.def)             Requested size: 345.16368pt x 206.64651pt.
+ [13 <./introduction/mifare_classic.jpg>]
+[14] [15] [16] [17] <introduction/apdus.jpg, id=62, 616.55344pt x 160.34906pt>
+File: introduction/apdus.jpg Graphic file (type jpg)
+
+<use introduction/apdus.jpg>
+Package pdftex.def Info: introduction/apdus.jpg used on input line 365.
+(pdftex.def)             Requested size: 431.58446pt x 112.24356pt.
+ [18 <./introduction/apdus.jpg>] [19]
+Overfull \hbox (33.279pt too wide) in paragraph at lines 420--420
+[]\OT1/cmtt/m/n/12 converter [options] <package_name> <package_aid> <major_vers
+ion>.<minor_version>[] 
+ []
+
+[20]
+Overfull \hbox (39.45401pt too wide) in paragraph at lines 467--467
+[]\OT1/cmtt/m/n/12 open_sc -security 1 -keyind 0 -keyver 0 -mac_key 40414243444
+5464748494a4b4c4d4e4f[] 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 132--133
-
- []
-
-[7] [8]
-Underfull \hbox (badness 10000) in paragraph at lines 171--175
-
+Overfull \hbox (8.579pt too wide) in paragraph at lines 467--467
+[]\OT1/cmtt/m/n/12 #install -file ..\code\applets\bin\uk\ac\cam\bo271\applets\c
+hallengeresponse[] 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 178--179
-
- []
-
-[9]
-Underfull \hbox (badness 10000) in paragraph at lines 194--195
-
- []
-
-[10]
-Overfull \hbox (3.9125pt too wide) in paragraph at lines 225--228
-\OT1/cmr/m/n/12 code pro-duced (i.e. non-JCMathLib Java Card code in-clud-ing C
-MAC and ECDSA. (TODO:
+Overfull \hbox (20.929pt too wide) in paragraph at lines 467--467
+[]               \OT1/cmtt/m/n/12 \javacard\challengeresponse.cap -sdAID a00000
+0003000000 -priv 2[] 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 225--228
-
- []
-
-[11]
-Underfull \hbox (badness 10000) in paragraph at lines 232--234
-
+Overfull \hbox (2.40399pt too wide) in paragraph at lines 467--467
+[]\OT1/cmtt/m/n/12 install -file ..\code\applets\bin\uk\ac\cam\bo271\applets\ch
+allengeresponse[] 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 237--238
-
+Overfull \hbox (14.754pt too wide) in paragraph at lines 467--467
+[]              \OT1/cmtt/m/n/12 \javacard\challengeresponse.cap -sdAID a000000
+151000000 -priv 2[] 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 249--253
-
+[21]
+Overfull \hbox (4.00035pt too wide) in paragraph at lines 495--496
+\OT1/cmr/m/n/12 Initially, the Open-Card Frame-work was iden-ti-fied as a po-te
+n-tial Java-based mid-dle-ware/API
  []
 
-[12]
-Underfull \hbox (badness 10000) in paragraph at lines 263--264
+[22] [23] [24] [25] <implementation/tlv.jpg, id=93, 602.25pt x 155.07938pt>
+File: implementation/tlv.jpg Graphic file (type jpg)
 
- []
+<use implementation/tlv.jpg>
+Package pdftex.def Info: implementation/tlv.jpg used on input line 596.
+(pdftex.def)             Requested size: 301.12425pt x 77.53949pt.
 
+<implementation/CMAC.jpg, id=94, 578.16pt x 313.17pt>
+File: implementation/CMAC.jpg Graphic file (type jpg)
 
-Underfull \hbox (badness 10000) in paragraph at lines 265--267
+<use implementation/CMAC.jpg>
+Package pdftex.def Info: implementation/CMAC.jpg used on input line 607.
+(pdftex.def)             Requested size: 289.07928pt x 156.58461pt.
+ [26 <./implementation/tlv.jpg>]
+<implementation/CBC-MAC.png, id=98, 572.1375pt x 210.7875pt>
+File: implementation/CBC-MAC.png Graphic file (type png)
 
- []
+<use implementation/CBC-MAC.png>
+Package pdftex.def Info: implementation/CBC-MAC.png used on input line 612.
+(pdftex.def)             Requested size: 286.06804pt x 105.3935pt.
+ [27 <./implementation/CMAC.jpg> <./implementation/CBC-MAC.png>] [28] [29] [30]
+ [31] [32] [33] [34] [35] [36] [37] [38]
+[39] [40] [41] [42] [43] [44] [45] [46] [47] [48] [49]
+<appendix/opacity-zkm.jpg, id=176, 969.6225pt x 1241.38782pt>
+File: appendix/opacity-zkm.jpg Graphic file (type jpg)
 
+<use appendix/opacity-zkm.jpg>
+Package pdftex.def Info: appendix/opacity-zkm.jpg used on input line 1113.
+(pdftex.def)             Requested size: 387.84213pt x 496.54633pt.
+ [50]
+<appendix/opacity-zkm-opt.jpg, id=180, 978.65625pt x 1228.59pt>
+File: appendix/opacity-zkm-opt.jpg Graphic file (type jpg)
 
-Underfull \hbox (badness 10000) in paragraph at lines 268--269
+<use appendix/opacity-zkm-opt.jpg>
+Package pdftex.def Info: appendix/opacity-zkm-opt.jpg used on input line 1115.
+(pdftex.def)             Requested size: 391.45557pt x 491.42729pt.
+ [51 <./appendix/opacity-zkm.jpg>]
+<appendix/cvc-1.jpg, id=184, 1044.90375pt x 1388.18625pt>
+File: appendix/cvc-1.jpg Graphic file (type jpg)
 
- []
+<use appendix/cvc-1.jpg>
+Package pdftex.def Info: appendix/cvc-1.jpg used on input line 1118.
+(pdftex.def)             Requested size: 417.9541pt x 555.26466pt.
 
+<appendix/cvc-2.jpg, id=185, 1044.90375pt x 1160.83687pt>
+File: appendix/cvc-2.jpg Graphic file (type jpg)
 
-Underfull \hbox (badness 10000) in paragraph at lines 270--271
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 272--273
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 274--275
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 276--277
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 280--281
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 288--290
-
- []
-
-[13] [14] [15] [16] [17] (dissertation.aux) ) 
+<use appendix/cvc-2.jpg>
+Package pdftex.def Info: appendix/cvc-2.jpg used on input line 1119.
+(pdftex.def)             Requested size: 417.9541pt x 464.32652pt.
+ [52 <./appendix/opacity-zkm-opt.jpg>] [53 <./appendix/cvc-1.jpg>] [54 <./appen
+dix/cvc-2.jpg>] [55] (dissertation.aux) ) 
 Here is how much of TeX's memory you used:
- 273 strings out of 493333
- 3493 string characters out of 3131011
- 58255 words of memory out of 3000000
- 3864 multiletter control sequences out of 15000+200000
- 7894 words of font info for 28 fonts, out of 3000000 for 9000
+ 2503 strings out of 493333
+ 34923 string characters out of 3131011
+ 94817 words of memory out of 3000000
+ 5978 multiletter control sequences out of 15000+200000
+ 10888 words of font info for 41 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 22i,5n,19p,494b,142s stack positions out of 5000i,500n,10000p,200000b,50000s
-<C:/Users/Ben/AppData/Local/Progra
-ms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/Ben/AppData/L
-ocal/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/Ben
-/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr17.pfb><C:
-/Users/Ben/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cms
-y10.pfb>
-Output written on dissertation.pdf (17 pages, 83625 bytes).
+ 39i,10n,26p,860b,241s stack positions out of 5000i,500n,10000p,200000b,50000s
+<C:/Users/Ben/AppData/Local/Programs/M
+iKTeX 2.9/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/Ben/AppData/Local
+/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi12.pfb><C:/Users/Ben/Ap
+pData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Us
+ers/Ben/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr12.
+pfb><C:/Users/Ben/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts
+/cm/cmr17.pfb><C:/Users/Ben/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/publi
+c/amsfonts/cm/cmr8.pfb><C:/Users/Ben/AppData/Local/Programs/MiKTeX 2.9/fonts/ty
+pe1/public/amsfonts/cm/cmsy10.pfb><C:/Users/Ben/AppData/Local/Programs/MiKTeX 2
+.9/fonts/type1/public/amsfonts/cm/cmsy8.pfb><C:/Users/Ben/AppData/Local/Program
+s/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmtt12.pfb><C:/Users/Ben/AppData/Lo
+cal/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmu10.pfb><C:/Users/Ben/
+AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/msbm10.pf
+b>
+Output written on dissertation.pdf (55 pages, 3949019 bytes).
 PDF statistics:
- 73 PDF objects out of 1000 (max. 8388607)
+ 236 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 51 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -16,22 +16,28 @@ class Store:
         root = self.tree.getroot()
         for binding in root.findall('binding'):
             print(binding.find('id').text)
-            self.bindings[int(binding.find('id').text)] = binding.find('secret').text
+            self.bindings[int(binding.find('id').text)] = (binding.find('secret').text, binding.find('cvc').text)
 
-    def exists(self, card_id):
+    def contains(self, card_id):
         return card_id in self.bindings
 
-    def getSecret(self, card_id):
-        return int(self.bindings[card_id])
+    def getCardInfo(self, card_id):
+        print("Getting PB value")
+        print(self.bindings[card_id])
+        print(int.from_bytes(self.bindings[card_id][0], byteorder='big'))
+        print(self.bindings[card_id][1])
+        return int.from_bytes(self.bindings[card_id][0], byteorder='big'), self.bindings[card_id][1]
 
-    def addRecord(self, card_id, secret):
-        print(self.bindings)
+
+    def addRecord(self, card_id, secret, cvc):
         print(card_id)
         print()
-        if (self.exists(card_id)):
+        if (self.contains(card_id)):
+            # TODO: Instead, update existing entry
             return
-        self.bindings[card_id] = secret
+        self.bindings[card_id] = (secret, cvc)
         newentry = ET.SubElement(self.tree.getroot(), 'binding')
         ET.SubElement(newentry, 'id').text = str(card_id)
         ET.SubElement(newentry, 'secret').text = str(int.from_bytes(secret, byteorder='big'))
+        ET.SubElement(newentry, 'cvc').text = str(int.from_bytes(cvc, byteorder='big'))
         self.tree.write(self.filename)

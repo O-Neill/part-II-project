@@ -75,10 +75,6 @@ public class PBReg {
 
     private List mapping;
 
-    public PBReg() {
-        mapping = new List();
-    }
-
     // Returns true/false depending on whether match was found.
     public boolean getZ(byte[] host_id, byte[] zOut, short zOffset) {
         ListElem elem = mapping.findElem(host_id);
@@ -92,6 +88,7 @@ public class PBReg {
     // If the requested ID already has an entry, update it with a new value,
     // otherwise create a new entry.
     public void add_or_update(byte[] host_id, byte[] z, short zOffset) {
+        //JCSystem.beginTransaction();
         ListElem elem = mapping.findElem(host_id);
         if (elem == null) {
             elem = new ListElem(host_id, z, zOffset);
@@ -99,11 +96,16 @@ public class PBReg {
         } else {
             elem.setSecret(z, zOffset);
         }
+        //JCSystem.commitTransaction();
     }
 
     public boolean registered(byte[] host_id) {
         ListElem elem = mapping.findElem(host_id);
         return (elem != null);
+    }
+
+    public void init() {
+        mapping = new List();
     }
 
 }

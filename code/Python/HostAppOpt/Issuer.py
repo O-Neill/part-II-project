@@ -1,6 +1,16 @@
 import asn1
 from smartcard.CardRequest import CardRequest
 import hashlib
+import os
+
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.serialization import Encoding, \
+                                                         NoEncryption, \
+                                                         PrivateFormat, \
+                                                         PublicFormat, \
+                                                         load_der_private_key
 
 # TODO: Could incorporate upload script into this program.
 # TODO: Consider possibility of attacker messing with card's stored keys.
@@ -25,6 +35,7 @@ def encode_key(key):
 
 # Format of sig is (r,s) concatenated directly, 32B each. Encode using BER.
 def encode_sig(sig):
+    # NOTE: UNUSED
     sigencoder = asn1.Encoder()
     sigencoder.start()
     # Start overall sequence for containing the signature data.
@@ -70,27 +81,26 @@ def generate_card_keys(connection, issuer_id, guid):
     keygen_request.append(len(issuer_id) + len(guid))  # Lc - total data length
     keygen_request.extend(issuer_id)
     keygen_request.extend(guid)
-    keygen_request.append(0x89)  # Expect 65B Pubkey and 72B signature.
-    data, sw1, sw2 = connection.transmit(keygen_request)
-    pubkey = data[0:65]
-    signature = data[65:]
+    keygen_request.append(65)  # Expect 65B Pubkey.
+    pubkey, sw1, sw2 = connection.transmit(keygen_request)
     print('Gen keys')
     print(hex(sw1) + ", " + hex(sw2))
-    return pubkey, signature
+    return pubkey
 
 
-def format_cvc(connection):
+def format_cvc(connection, private_key):
     # TODO: use proper values (not just test ones)
     # 6B Issuer ID, 2B Issuer Key ID (for issued CVC)
     issuerID = bytes([0, 0, 0, 0, 0, 0, 0, 1])
 
     # Globally Unique ID - Application specific, identifies card or cardholder.
     # Could be generated from a counter.
-    guID = bytes([0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+    guID = bytes([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
 
-    pubkey, signature = generate_card_keys(connection, issuerID, guID)
-    print("Signature: \n" + str(signature) + ", length " + str(len(signature)))
-    print("Pubkey: \n" + str(pubkey) + ", length " + str(len(pubkey)))
+    roleID = bytes([0x00])
+
+    pubkey = generate_card_keys(connection, issuerID, guID)
+
 
     encoder = asn1.Encoder()
     encoder.start()
@@ -104,10 +114,20 @@ def format_cvc(connection):
     encoded_key = encode_key(pubkey)
     encoder.write(encoded_key, 0x7F49)
 
+    data = bytearray(issuerID)
+    data.extend(guID)
+    data.extend(encoded_key)
+    data.extend(roleID)
+    signature = private_key.sign(bytes(data), ec.ECDSA(hashes.SHA256()))
+
+    print("Signature: \n" + str(signature) + ", length " + str(len(signature)))
+    print("Pubkey: \n" + str(pubkey) + ", length " + str(len(pubkey)))
+
+    # TODO: Is it in the correct format?
     encoder.write(bytes(signature), 0x5F37)
 
     # role ID: 0x00 for card application key CVC
-    encoder.write(bytes([0x00]), 0x5F4C)
+    encoder.write(roleID, 0x5F4C)
 
     print([i for i in encoder.output()])
 
@@ -134,6 +154,23 @@ def hashfun(val):
     hash_obj.update(val)
     return hash_obj.digest()
 
+# Initialise key
+# TODO: check if already initialised and saved.
+if os.path.exists("/Users/Ben/Desktop/part_II_project/Project/code/Python/HostAppOpt/privkey"):
+    key_file = open("/Users/Ben/Desktop/part_II_project/Project/code/Python/HostAppOpt/privkey", mode='r+b')
+    priv_bytes = key_file.read()
+    priv = load_der_private_key(priv_bytes, None, default_backend())
+else:
+    priv = ec.generate_private_key(ec.SECP256R1(), backend=default_backend())
+    priv_bytes = priv.private_bytes(Encoding.DER, PrivateFormat.PKCS8, NoEncryption())
+    key_file = open("/Users/Ben/Desktop/part_II_project/Project/code/Python/HostAppOpt/privkey", mode='w+b')
+    key_file.write(priv_bytes)
+    pub = priv.public_key()
+    pub_bytes = pub.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+    pubkey_file = open("/Users/Ben/Desktop/part_II_project/Project/code/Python/HostAppOpt/root_pubkey", mode='w+b')
+    pubkey_file.write(pub_bytes)
+    # TODO: Store public key.
+
 
 print("\n\nISSUING PROCESS")
 cardRequest = CardRequest(timeout=None)
@@ -146,7 +183,7 @@ cardservice.connection.connect()
 select(connection)
 
 # Format CVC from information obtained from the card.
-cvc = format_cvc(connection)
+cvc = format_cvc(connection, priv)
 
 # Upload the CVC onto the card.
 send_cvc(connection, cvc)

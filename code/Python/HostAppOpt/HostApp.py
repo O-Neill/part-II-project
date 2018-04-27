@@ -10,12 +10,15 @@ from smartcard.CardRequest import CardRequest
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import cmac
 from cryptography.hazmat.primitives.ciphers import algorithms
 from cryptography.hazmat.primitives.serialization import Encoding, \
                                                          PrivateFormat, \
                                                          NoEncryption, \
-                                                         PublicFormat
+                                                         PublicFormat, \
+                                                         load_der_public_key
+from cryptography.exceptions import InvalidSignature
 
 sys.path.append(os.path.join(sys.path[0], '../lib/python-rubenesque'))
 from rubenesque.curves.sec import secp256r1
@@ -179,10 +182,12 @@ def create_apdu(cla, ins, p1, p2, data, ret_len=None):
 
 class Client:
     # Initialise client with 8B bytearray containing id.
-    def __init__(self, id_h, filename):
+    def __init__(self, id_h, filename, root_pubkey, mask):
         self.store = PBStore.Store(filename)
         # TODO: Check id length
         self.id = id_h
+        self.root_pubkey = root_pubkey
+        self.mask = mask
 
     # Extract Q_c from c_c, and validate Q_c belongs to EC domain.
     # c_c in Basic Encoding Rules (BER) format.
@@ -204,7 +209,7 @@ class Client:
 
         tag, guid = decoder.read()
         assert tag[0] == 0x5F20, "Expected GUID tag 0x5F20, got %s" % hex(tag[0])
-        # self.guid = guid
+        self.guid = guid
 
         # Return compound type.
         tag, pubkey_der = decoder.read()
@@ -215,16 +220,18 @@ class Client:
         tag, alg = key_decoder.read()
         assert tag[0] == 0x06, "Expected algorithm tag 0x06, got %s" % hex(tag[0])
         assert alg == '1.2.840.10045.3.1.7', "Expected algorithm ID 1.2.840.10045.3.1.7, got %s" % alg
-        tag, key = key_decoder.read()
+        tag, pubkey_raw = key_decoder.read()
         assert tag[0] == 0x86, "Expected key bytes tag 0x86, got %s" % hex(tag[0])
-        self.card_pubkey = key
+        self.card_pubkey = pubkey_raw
 
-        tag, sig = decoder.read()
+        tag, signature = decoder.read()
         assert tag[0] == 0x5F37, "Expected digital signature tag 0x5F37, got %s" % hex(tag[0])
 
         # Role of key contained in this CVC
         tag, roleID = decoder.read()
         assert tag[0] == 0x5F4C, "Expected role ID tag 0x5F4C, got %s" % hex(tag[0])
+
+        return issuerID, guid, pubkey_der, pubkey_raw, signature, roleID
 
     def process_card(self):
         global max_cvc_len
@@ -257,15 +264,16 @@ class Client:
         # TODO: Break conversion from DER into separate function
         pubkey_h_arr = get_public_bytes(self.Q_h)
 
-        # TODO: Check if record exists, if so, set cb=PB
-        cb = NO_PB
+        # This terminal supports PB
+        cb = PB
 
         in_dat = [b for b in self.id]
         in_dat.extend(pubkey_h_arr)
         print(len(pubkey_h_arr))
         in_dat.append(cb)
-        # CLA 80 = user defined. INS 20 = Auth request. P1 is public key length.
-        auth_request = create_apdu(0x80, 0x20, len(pubkey_h_arr), 0x00, in_dat, 255)
+        # CLA 80 = user defined. INS 20 = Auth request.
+        print("Input: " + str(in_dat))
+        auth_request = create_apdu(0x80, 0x20, 0x00, 0x00, in_dat, 255)
 
         start = time.time()
         data, sw1, sw2 = connection.transmit(auth_request)
@@ -275,8 +283,8 @@ class Client:
         #quit(0)
         print("AUTHENTICATE")
         print(hex(sw1) + ", " + hex(sw2))
-        cb, nonce, mac, EncGuid, iccID = extract_fields(data)
-        return self.authenticate(cb, nonce, mac, EncGuid, iccID)
+        cb_card, nonce, mac, EncGuid, iccID = extract_fields(data)
+        return self.authenticate(cb_card, nonce, mac, EncGuid, iccID)
 
     # Action taken when response from card received.
     # Function performs functionality of the SAM in the protocol.
@@ -298,7 +306,7 @@ class Client:
             # TODO: Maybe should load CVC from store to get issuerID, card_pubkey.
 
             # S4, S5, S6
-            if self.store.exists(id_c) is False:
+            if self.store.contains(id_c) is False:
                 # PB was chosen but no matching register entry exists.
                 # zeroise privkey
                 self.d_h = 0
@@ -311,7 +319,8 @@ class Client:
                 # Moved here to fix the issue.
                 # S10
                 # Obtain z from id_c PB registry
-                z = self.store.getSecret(id_c)
+                z, cvc = self.store.getCardInfo(id_c)
+                issuerID, guid, pubkey_der, pubkey_raw, signature, roleID = self.cvc_extract(cvc)
                 print("Accessed PB registry")
         else:
             print("ICC computed a new Z")
@@ -328,9 +337,9 @@ class Client:
 
             # S8, S9
             # If not registered,
-            self.cvc_extract(cvc)
+            issuerID, guid, card_key_der, card_key_raw, signature, roleID = self.cvc_extract(cvc)
             privkey = get_private_bytes(self.d_h)
-            z = ec_dh(privkey, self.card_pubkey)
+            z = ec_dh(privkey, card_key_raw)
             self.d_h = 0
 
         pubkey_bytes = self.Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
@@ -383,7 +392,7 @@ class Client:
             print("Adding record")
             print("ID: " + str(id_c))
             print("Z: " + str(z_next))
-            self.store.addRecord(id_c, bytes(z_next))
+            self.store.addRecord(id_c, bytes(z_next), bytes(cvc))
 
         if CB_card & 0x0F != NO_PB:
             # S16
@@ -392,6 +401,8 @@ class Client:
             # S17
             CB_host = NO_PB
 
+        # TODO: Check blacklist to see if ID is barred.
+
         if CB_card & RET_GUID:
             # TODO
             # Unsure about the following:
@@ -399,30 +410,57 @@ class Client:
             #build C_ICC from C_ICC* amd GUID
             #Verify C_ICC signature using ECDSA
             # S21
+
+            # data = issuerID, GUID, encoded_key, roleID
+            data = issuerID
+            data.append(guid)
+            data.append(card_key_der)
+            data.append(roleID)
+
             CB_H |= RET_GUID
+
+
+            # If the GUID doesn't permit access to this terminal, return.
+            if (int.from_bytes(self.mask, byteorder='big') ^ int.from_bytes(guid, byteorder='big')) == 0:
+                # TODO: Consult whitelist first
+                return False
+
+            try:
+                self.root_pubkey.verify(signature, data, ec.ECDSA(hashes.SHA256()))
+            except InvalidSignature:
+                return False
+
         else:
             # S22
             guid = None
 
         # S23
-        return id_c, CB_host, guid
+        return True
         # For additional commands use secure messaging with SKmac and SKenc.
 
 
-d_h, Q_h = gen_keys()
+# Load the root key
+root_file = open("/Users/Ben/Desktop/part_II_project/Project/code/Python/HostAppOpt/root_pubkey", mode='r+b')
+root_bytes = root_file.read()
 
-# TODO: Break conversion from DER into separate function
-pubkey_h_arr = Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
-# TODO: Should I remove unwanted algorithm identifiers from DER structure?
-
-print("\n\nAUTHENTICATION PROCESS")
-
+root = load_der_public_key(root_bytes, default_backend())
 id_h = bytes([0, 0, 0, 0, 0, 0, 0, 1])
-cl = Client(id_h, "store.xml")
-start = time.time()
-result = cl.process_card()
-if result == PB_INIT:
-    quit(0)
-id_c = result[0]
-print("Time taken overall: " + str(time.time() - start))
-print("card id: " + str(id_c))
+mask = bytes([255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255])
+cl = Client(id_h, "/Users/Ben/Desktop/part_II_project/Project/code/Python/HostAppOpt/store.xml", root, mask)
+
+while(True):
+    print("\n\nAUTHENTICATION PROCESS")
+
+    # Generate ephemeral keypair
+    d_h, Q_h = gen_keys()
+
+    # TODO: Break conversion from DER into separate function
+    pubkey_h_arr = Q_h.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+    # TODO: Should I remove unwanted algorithm identifiers from DER structure?
+
+    start = time.time()
+    result = cl.process_card()
+    if result == PB_INIT:
+        # TODO: Deal with.
+        quit(0)
+    print("Time taken overall: " + str(time.time() - start))

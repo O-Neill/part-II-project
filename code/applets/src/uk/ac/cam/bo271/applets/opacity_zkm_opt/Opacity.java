@@ -13,8 +13,6 @@ import javacard.security.ECPrivateKey;
 import javacard.security.CryptoException;
 import javacardx.framework.tlv.*;
 
-// TODO: Consider what happens if deselect at any point. May need atomic
-// transactions provided by JCSystem.
 // Make more efficient by avoiding creating new arrays.
 
 // TODO: Could call relevant init() methods during installation (e.g. for CMAC)
@@ -23,7 +21,7 @@ import javacardx.framework.tlv.*;
 public class Opacity extends Applet {
     private static byte[] cvc;
     private static byte[] id_card;
-    private static ECConfig m_ecc;
+    //private static ECConfig m_ecc;
     private static PBReg pb_reg;
 
     // TODO: Get this from CVC instead of initialising here.
@@ -60,9 +58,6 @@ public class Opacity extends Applet {
 
     private Opacity() {
         super();
-        m_ecc = new ECConfig((short)512);
-        m_ecc.bnh.rm.locker.setLockingActive(false);
-        BignatStore.init(m_ecc.bnh);
         pb_reg = new PBReg();
 
         hash = MessageDigest.getInstance(MessageDigest.ALG_SHA_256, false);
@@ -103,6 +98,9 @@ public class Opacity extends Applet {
 
 
     private void get_secret(byte[] pubkey_host, short keyOffset, short keyLen, byte[] zOut, short zOffset) {
+
+        // TODO: perform initialisation in constructor.
+
         short len = dh.generateSecret(pubkey_host, keyOffset, keyLen, zOut, zOffset);
 
         if (len != 32) {
@@ -177,12 +175,14 @@ public class Opacity extends Applet {
             // After various initial allocations
             return;
         }
+//
         // C2
         boolean is_registered = pb_reg.getZ(id_h, z, (short)0);
         if (!is_registered || (CB_H & 0x0F) != Consts.PB) {
             //validate_key(pubkey);
             get_secret(buffer, Consts.AUTH_OFFSET_PUBKEY, Consts.PUBKEY_LEN, z, (short)0);
             iccID = cvc;
+            //send(buffer, Consts.AUTH_OFFSET_PUBKEY, Consts.PUBKEY_LEN, apdu);
         } else {
             // z contains the previously acquired PB value.
             iccID = id_card;
@@ -332,19 +332,8 @@ public class Opacity extends Applet {
         apdu.sendBytes((short)0, len);
     }
 
-    public PrimitiveBERTLV format_tlv(byte cls, short tagnum, byte[] val, short valOffset, short len) {
-        PrimitiveBERTLV tlv = new PrimitiveBERTLV(len);
-        PrimitiveBERTag tag = new PrimitiveBERTag();
-        tag.init(cls, tagnum);
 
-        tlv.init(tag, val, valOffset, len);
-        return tlv;
-    }
-
-
-    public void init_keys_and_sign(APDU apdu) {
-        short sig_len = 72;
-        short key_len = 65;
+    public void init_keys(APDU apdu) {
         // Generate 256b EC key pair.
         ECPrivateKey p = (ECPrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_EC_FP_PRIVATE, (short)256, false);
         ECPublicKey q = (ECPublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_EC_FP_PUBLIC, (short)256, false);
@@ -371,23 +360,18 @@ public class Opacity extends Applet {
         // Generate values for the key pair.
         kp.genKeyPair();
 
-        if (q.getSize() != 256) {
-            // TODO: not the right type. Change.
-            ISOException.throwIt(ISO7816.SW_WRONG_P1P2);
-        }
-
         // Temporary array containing the new public key and corresponding CVC signature.
-        short total_len = (short)(key_len + sig_len);
-        byte[] key_sig_array = JCSystem.makeTransientByteArray(total_len, JCSystem.CLEAR_ON_DESELECT);
+        short total_len = Consts.PUBKEY_LEN;
+        byte[] key_array = JCSystem.makeTransientByteArray(total_len, JCSystem.CLEAR_ON_DESELECT);
         short keyBytes = 0;
         try {
-            keyBytes = q.getW(key_sig_array, (short)0);
+            keyBytes = q.getW(key_array, (short)0);
         } catch(Exception e) {
             ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
         }
 
         // Should be 0x04 followed by 32B each for x and y coordinates.
-        if (keyBytes != key_len) {
+        if (keyBytes != Consts.PUBKEY_LEN) {
             ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
         }
 
@@ -395,30 +379,12 @@ public class Opacity extends Applet {
 
         // Generate signature section for the CVC using the new private key.
 
-        // Calling library version. Try to get my own working.
-        //Signature signer = new ECDSA_SHA_256(m_ecc);
-        Signature signer = Signature.getInstance(Signature.ALG_ECDSA_SHA_256, false);
-        signer.init(kp.getPrivate(), Signature.MODE_SIGN);
+        dh.init(p);
+        pb_reg.init();
 
         byte issuer_id_len = buffer[ISO7816.OFFSET_P1];
-        byte guid_len = (byte)(buffer[ISO7816.OFFSET_LC] - issuer_id_len);
 
-        signer.update(buffer, ISO7816.OFFSET_CDATA, issuer_id_len);
-        signer.update(buffer, (short)(ISO7816.OFFSET_CDATA + issuer_id_len), guid_len);
-
-        short sigBytes = 0;
-
-        // Outputs concatenation of r and s, 32B each.
-        sigBytes = signer.sign(key_sig_array, (short)0, key_len, key_sig_array, key_len);
-
-        if (sigBytes != sig_len) {
-            //ISOException.throwIt(sigBytes);
-        }
-
-        dh.init(kp.getPrivate());
-
-
-        send(key_sig_array, (short)0, (short)(key_len + sigBytes), apdu);
+        send(key_array, (short)0, Consts.PUBKEY_LEN, apdu);
     }
 
     // Sets the CVC in memory and computes its hash to acquire the card ID.
@@ -451,11 +417,7 @@ public class Opacity extends Applet {
         //BignatStore.apdu = apdu;
 
         // TODO: Move to install
-        if (m_ecc == null) {
-            // TODO: Should it be 256?
-            m_ecc = new ECConfig((short)512);
-            m_ecc.bnh.rm.locker.setLockingActive(false);
-            BignatStore.init(m_ecc.bnh);
+        if (pb_reg == null) {
             pb_reg = new PBReg();
         }
 
@@ -473,8 +435,8 @@ public class Opacity extends Applet {
             return;
         }
 
-
         try {
+            // TODO: Check INS section of 7816-4, which codes should be used?
             switch(ins) {
                 // ins 0x20 is regular authentication request.
                 case (byte)0x20:
@@ -484,7 +446,7 @@ public class Opacity extends Applet {
                     // Generate new key pair, return public key in APDU response.
                     // TODO: Consider security implications of easily resetted keys.
 
-                    init_keys_and_sign(apdu);
+                    init_keys(apdu);
                     break;
                 case (byte)0x22:
                     // Accept and save CVC passed by issuer.
@@ -494,10 +456,6 @@ public class Opacity extends Applet {
 
                 case (byte)0x23:
                     send_pb(apdu);
-                    break;
-
-                case (byte)0x24:
-                    // ECPoint testing
                     break;
 
                 default: ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
