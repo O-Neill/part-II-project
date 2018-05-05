@@ -22,20 +22,23 @@ public class AESCMAC128 extends Signature {
     // Constant to be XORed with last byte in subkey generation, defined in
     // NIST 800-38B standards. Generates 16B CMAC keys.
     private static byte Rb = (byte) 0x87;
-    private byte[] k1;
-    public byte[] k2;
-    private AESKey aesKey;
+    private static byte[] k1;
+    private static byte[] k2;
+    private static AESKey aesKey;
 
-    private byte[] prev_block;
-    private boolean seen_data;
+    private static byte[] prev_block;
+    private static boolean seen_data;
 
     // Using cbc cipher instead of cbc signature because 128b cbc signature
     // isn't available on Java Card 3.0.4 card used.
-    Cipher aesCipher;
+    private static Cipher aesCipher;
 
-    private byte[] k;
-    private byte[] lastBlock;
-    byte[] temp;
+    private static byte[] k;
+    private static byte[] lastBlock;
+    private static byte[] temp;
+
+    // For debug
+    public static byte p2;
 
     public AESCMAC128() {
         k = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
@@ -43,6 +46,7 @@ public class AESCMAC128 extends Signature {
         k2 = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
         prev_block = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
         temp = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
+        aesCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
     }
 
     public byte[] getk2() {
@@ -117,9 +121,6 @@ public class AESCMAC128 extends Signature {
     // To initialise, save the key, and initialise the subkeys.
     public void init(Key key, byte mode, byte[] init_info, short off, short len) {
         // If mode is verify, fail. Could be implemented but no need.
-        if (mode != Signature.MODE_SIGN) {
-            throw new CryptoException(CryptoException.ILLEGAL_VALUE);
-        }
 
         // initialise CBC-MAC helper
         aesKey = (AESKey) key;
@@ -127,35 +128,12 @@ public class AESCMAC128 extends Signature {
 
         // Compute and store keys k1 and k2.
         aesKey.getKey(k, (short)0);
-
         Util.arrayFillNonAtomic(k1, (short)0, (short)16, (byte)0x00);
-        try {
-            //ALG_AES_BLOCK_128_ECB_NOPAD
-            aesCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
-            //aesMAC = Signature.getInstance(MessageDigest.ALG_NULL, Signature.SIG_CIPHER_AES_MAC128, Cipher.PAD_NOPAD, false);
-            //aesMAC = Signature.getInstance(Signature.ALG_AES_MAC_128_NOPAD, false);
-        } catch (CryptoException e) {
-            ISOException.throwIt(Util.makeShort((byte)0x54, (byte)e.getReason()));
-        }
 
-        try {
-            aesCipher.init(aesKey, Cipher.MODE_ENCRYPT);
-        } catch (CryptoException e) {
-            ISOException.throwIt(Util.makeShort((byte)0x55, (byte)e.getReason()));
-        }
-
-
-        //aesMAC.init(aesKey, Signature.MODE_SIGN);
-        //aesMAC.sign(k1, (short)0, (short)16, k1, (short)0);
+        aesCipher.init(aesKey, Cipher.MODE_ENCRYPT);
 
         // Generate subkeys
-        try {
-            aesCipher.doFinal(k1, (short)0, (short)16, k1, (short)0);
-        } catch (CryptoException e) {
-            ISOException.throwIt(Util.makeShort((byte)0x56, (byte)e.getReason()));
-        }
-
-
+        aesCipher.doFinal(k1, (short)0, (short)16, k1, (short)0);
         subkeys(k1);
         Util.arrayCopy(k1, (short)0, k2, (short)0, (short)16);
         subkeys(k2);
@@ -163,12 +141,12 @@ public class AESCMAC128 extends Signature {
         Util.arrayFillNonAtomic(prev_block, (short)0, (short)16, (byte)0x00);
         seen_data = false;
 
-        //aesMAC.init(aesKey, Signature.MODE_SIGN);
+        // Initialise the block cipher with the key.
         aesCipher.init(aesKey, Cipher.MODE_ENCRYPT);
-
     }
 
     public short sign(byte[] input, short inOffset, short len, byte[] sigBuff, short sigOffset) {
+
         lastBlock = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
         // Number of complete blocks (minus the last one if the last is complete)
         short leadingBlocks = (short)(len/16);  // Number of blocks before last.
@@ -177,7 +155,6 @@ public class AESCMAC128 extends Signature {
         boolean no_data = !seen_data && len == 0;
         // Deal with special case of no input data. Pad block with 1 followed by
         // 0s and treat as single, complete block.
-
 
         if (lastBlockLen == 0 && !no_data) {
             // Overall input is a multiple of the block length.
@@ -196,8 +173,8 @@ public class AESCMAC128 extends Signature {
             // Final input is last cached block provided to update()
             Util.arrayCopy(prev_block, (short)0, lastBlock, (short)0, (short)16);
         }
+        
         // If no data was provided, lastBlock is a 0 block.
-
         if (lastBlockLen == 16) {
             // Last block takes up entire block, XOR it with k1
             for (short i = 0; i < 16; i++) {
@@ -219,8 +196,6 @@ public class AESCMAC128 extends Signature {
             }
         }
 
-
-
         // If the last block comes from the sign() input, update with prev_block
         if (len != 0) {
 
@@ -229,12 +204,10 @@ public class AESCMAC128 extends Signature {
                 update(input, inOffset, leadingBlocksLen);
 
                 // Cipher the cached block (second last block).
-                //aesMAC.update(prev_block, (short)0, (short)16);
                 aesCipher.update(prev_block, (short)0, (short)16, temp, (short)0);
             }
         }
 
-        //aesMAC.sign(lastBlock, (short)0, (short)16, sigBuff, sigOffset);
         aesCipher.doFinal(lastBlock, (short)0, (short)16, sigBuff, sigOffset);
 
         return 16;
@@ -276,30 +249,9 @@ public class AESCMAC128 extends Signature {
             return false;
         }
 
-        // TODO: Timing attack?
         byte[] t = JCSystem.makeTransientByteArray((short)16, JCSystem.CLEAR_ON_DESELECT);
 
         sign(input, inOffset, len, t, (short)0);
         return true;
     }
-
-
-    public static void send(byte[] buf, short offset, short len, APDU apdu) {
-
-        byte[] ret_buffer = apdu.getBuffer();
-
-        short ret_len = apdu.setOutgoing();
-
-        if (ret_len < len)
-            ISOException.throwIt( ISO7816.SW_WRONG_LENGTH );
-
-        apdu.setOutgoingLength(len);
-
-        Util.arrayCopy(buf, offset, ret_buffer, (short)0, len);
-
-        apdu.sendBytes((short)0, len);
-    }
-
-
-
 }

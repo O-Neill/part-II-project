@@ -265,22 +265,19 @@ class Client:
         pubkey_h_arr = get_public_bytes(self.Q_h)
 
         # This terminal supports PB
-        cb = PB
+        cb = NO_PB
 
         in_dat = [b for b in self.id]
         in_dat.extend(pubkey_h_arr)
         print(len(pubkey_h_arr))
         in_dat.append(cb)
         # CLA 80 = user defined. INS 20 = Auth request.
-        print("Input: " + str(in_dat))
-        auth_request = create_apdu(0x80, 0x20, 0x00, 0x00, in_dat, 255)
+        auth_request = create_apdu(0x80, 0x20, 0x00, 0, in_dat, 255)
 
         start = time.time()
         data, sw1, sw2 = connection.transmit(auth_request)
-        print(data)
         end = time.time()
         print("Time taken for card: " + str(end - start) + " seconds")
-        #quit(0)
         print("AUTHENTICATE")
         print(hex(sw1) + ", " + hex(sw2))
         cb_card, nonce, mac, EncGuid, iccID = extract_fields(data)
@@ -464,3 +461,4 @@ while(True):
         # TODO: Deal with.
         quit(0)
     print("Time taken overall: " + str(time.time() - start))
+    quit()

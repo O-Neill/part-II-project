@@ -139,20 +139,24 @@ public class Opacity extends Applet {
         }
     }
 
-    private void cmac(byte[] key, short key_offset, byte[] mac_input, byte[] sig, short sigOffset) {
+    private void cmac(byte[] key, short key_offset, byte[] mac_input, byte[] sig, short sigOffset, byte p2) {
+
+        AESCMAC128.p2 = p2;
+
         mac_key.setKey(key, key_offset);
-
-        try {
-            aes_cmac.init(mac_key, Signature.MODE_SIGN);
-        } catch (CryptoException e) {
-            ISOException.throwIt(Util.makeShort((byte)0x52, (byte)e.getReason()));
+        if (p2 == (byte)10) {
+            ISOException.throwIt((short)0x1000);
+            return;
         }
 
-        try {
-            aes_cmac.sign(mac_input, (short)0, Consts.CMAC_INPUT_LEN, sig, sigOffset);
-        } catch (CryptoException e) {
-            ISOException.throwIt(Util.makeShort((byte)0x53, (byte)e.getReason()));
+        aes_cmac.init(mac_key, Signature.MODE_SIGN);
+        if (p2 == (byte)11) {
+            ISOException.throwIt((short)0x1000);
+            return;
         }
+
+        aes_cmac.sign(mac_input, (short)0, Consts.CMAC_INPUT_LEN, sig, sigOffset);
+
     }
 
 
@@ -256,7 +260,7 @@ public class Opacity extends Applet {
         }
 
         // Generate cmac, placing output into return buffer.
-        cmac(keys, Consts.K_CRFM_OFFSET, mac_input, mac_output, (short)0);
+        cmac(keys, Consts.K_CRFM_OFFSET, mac_input, mac_output, (short)0, p2);
 
         if (p2 == (byte)7) {
             // After CMAC
@@ -414,17 +418,16 @@ public class Opacity extends Applet {
 
 
     public void process(APDU apdu) {
-        //BignatStore.apdu = apdu;
-
-        // TODO: Move to install
-        if (pb_reg == null) {
-            pb_reg = new PBReg();
-        }
 
 
         JCSystem.requestObjectDeletion();
 
         byte[] buffer = apdu.getBuffer();
+        byte p2 = buffer[ISO7816.OFFSET_P2];
+        if (p2 == (byte)1) {
+            return;
+        }
+
 
 		byte cla = buffer[ISO7816.OFFSET_CLA];
 		byte ins = buffer[ISO7816.OFFSET_INS];

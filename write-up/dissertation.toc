@@ -1,83 +1,79 @@
 \contentsline {section}{\numberline {1}Introduction}{7}
 \contentsline {subsection}{\numberline {1.1}Smartcards}{7}
 \contentsline {subsubsection}{\numberline {1.1.1}MIFARE classic}{7}
-\contentsline {subsection}{\numberline {1.2}Asymmetric vs Symmetric Cryptography}{8}
+\contentsline {subsection}{\numberline {1.2}Asymmetric vs Symmetric Cryptography}{7}
 \contentsline {subsubsection}{\numberline {1.2.1}As applied to smartcard access control systems}{8}
-\contentsline {subsection}{\numberline {1.3}Hardware used}{9}
-\contentsline {subsubsection}{\numberline {1.3.1}Java Cards}{10}
-\contentsline {subsection}{\numberline {1.4}Related Work}{10}
-\contentsline {subsection}{\numberline {1.5}Project Outcome}{11}
-\contentsline {section}{\numberline {2}Preparation}{12}
-\contentsline {subsection}{\numberline {2.1}Starting point}{12}
-\contentsline {subsection}{\numberline {2.2}Requirements analysis}{12}
-\contentsline {subsection}{\numberline {2.3}MIFARE Classic problems}{13}
-\contentsline {subsubsection}{\numberline {2.3.1}Attacks}{14}
-\contentsline {subsubsection}{\numberline {2.3.2}Problems with successors}{15}
-\contentsline {subsection}{\numberline {2.4}Preparation strategy outline}{15}
-\contentsline {subsubsection}{\numberline {2.4.1}Project structure}{16}
-\contentsline {subsubsection}{\numberline {2.4.2}Testing}{16}
-\contentsline {subsection}{\numberline {2.5}Safety case}{16}
-\contentsline {subsection}{\numberline {2.6}ISO7816}{17}
-\contentsline {subsubsection}{\numberline {2.6.1}Application Identifiers}{17}
-\contentsline {subsubsection}{\numberline {2.6.2}APDUs}{18}
-\contentsline {subsection}{\numberline {2.7}Development Preparation}{19}
-\contentsline {subsubsection}{\numberline {2.7.1}Version control}{19}
-\contentsline {subsubsection}{\numberline {2.7.2}Java Card 2.2.2 Build process}{19}
-\contentsline {subsubsection}{\numberline {2.7.3}Differences in Java Card 3.0.4 Build Process}{20}
-\contentsline {subsubsection}{\numberline {2.7.4}Uploading and running applets}{21}
-\contentsline {subsubsection}{\numberline {2.7.5}Practice}{21}
-\contentsline {subsection}{\numberline {2.8}Host to Card interface}{22}
-\contentsline {subsubsection}{\numberline {2.8.1}OpenCard Framework}{22}
-\contentsline {subsubsection}{\numberline {2.8.2}PCSC}{23}
-\contentsline {subsubsection}{\numberline {2.8.3}Python PC/SC wrapper}{23}
-\contentsline {section}{\numberline {3}Implementation}{24}
-\contentsline {subsection}{\numberline {3.1}Chosen Protocol - opacity ZKM}{24}
-\contentsline {subsubsection}{\numberline {3.1.1}Brief overview}{24}
-\contentsline {subsubsection}{\numberline {3.1.2}EC Crypto}{24}
-\contentsline {subsubsection}{\numberline {3.1.3}ECDH}{25}
-\contentsline {subsubsection}{\numberline {3.1.4}ECDSA}{25}
-\contentsline {subsubsection}{\numberline {3.1.5}ASN1}{26}
-\contentsline {subsubsection}{\numberline {3.1.6}CMAC}{26}
-\contentsline {subsubsection}{\numberline {3.1.7}Key derivation}{28}
-\contentsline {subsection}{\numberline {3.2}Java Card Protocol Implementation}{28}
-\contentsline {subsubsection}{\numberline {3.2.1}Program structure}{28}
-\contentsline {subsubsection}{\numberline {3.2.2}CMAC}{29}
-\contentsline {subsubsection}{\numberline {3.2.3}ECDH}{29}
-\contentsline {subsection}{\numberline {3.3}Host-side implementation}{30}
-\contentsline {subsubsection}{\numberline {3.3.1}ECDH}{30}
-\contentsline {subsection}{\numberline {3.4}Certificate issuing}{30}
-\contentsline {subsubsection}{\numberline {3.4.1}Certificate structure}{31}
-\contentsline {subsubsection}{\numberline {3.4.2}Certificate generation}{32}
-\contentsline {subsection}{\numberline {3.5}Authorization Options}{32}
-\contentsline {subsubsection}{\numberline {3.5.1}Multiple root keys and Issuer Identification Numbers}{33}
-\contentsline {subsubsection}{\numberline {3.5.2}GUID}{34}
-\contentsline {subsubsection}{\numberline {3.5.3}Card ID}{35}
-\contentsline {subsubsection}{\numberline {3.5.4}Public Key}{36}
-\contentsline {subsubsection}{\numberline {3.5.5}Authorization implementation}{36}
-\contentsline {subsection}{\numberline {3.6}Optimisations}{37}
-\contentsline {subsubsection}{\numberline {3.6.1}Persistent Binding}{37}
-\contentsline {subsubsection}{\numberline {3.6.2}Other optimisations}{37}
-\contentsline {subsection}{\numberline {3.7}Libraries used in implementation}{37}
-\contentsline {subsection}{\numberline {3.8}Change in versions}{38}
-\contentsline {section}{\numberline {4}Evaluation}{40}
-\contentsline {subsection}{\numberline {4.1}Evaluation of success criteria}{40}
-\contentsline {subsection}{\numberline {4.2}Security analysis}{41}
-\contentsline {subsubsection}{\numberline {4.2.1}Discussion of possible failures}{42}
-\contentsline {subsubsection}{\numberline {4.2.2}PB entry storage}{43}
-\contentsline {subsection}{\numberline {4.3}Timing analysis}{44}
-\contentsline {subsubsection}{\numberline {4.3.1}Results}{44}
-\contentsline {subsection}{\numberline {4.4}Evaluation of Implementation Decisions}{45}
-\contentsline {subsubsection}{\numberline {4.4.1}Choice of languages and developing environment}{45}
-\contentsline {subsubsection}{\numberline {4.4.2}Choice of protocol}{45}
-\contentsline {subsubsection}{\numberline {4.4.3}Certificate issuing and authorisation}{46}
-\contentsline {section}{\numberline {5}Conclusions}{47}
-\contentsline {subsection}{\numberline {5.1}Achievements}{47}
-\contentsline {subsection}{\numberline {5.2}Knowledge and Experience Gained}{47}
-\contentsline {subsection}{\numberline {5.3}What would have been done differently}{47}
-\contentsline {subsection}{\numberline {5.4}Future work}{48}
-\contentsline {section}{\numberline {6}Bibliography}{49}
-\contentsline {section}{\numberline {7}Appendices}{50}
-\contentsline {subsection}{\numberline {7.1}Appendix A - Opacity with Zero Key Management (ZKM)}{51}
-\contentsline {subsection}{\numberline {7.2}Appendix B - Opacity with Zero Key Management (ZKM-Optimised)}{52}
-\contentsline {subsection}{\numberline {7.3}Appendix C - CVC format}{53}
-\contentsline {section}{\numberline {8}Index}{55}
+\contentsline {subsection}{\numberline {1.3}Hardware used}{8}
+\contentsline {subsubsection}{\numberline {1.3.1}Java Cards}{9}
+\contentsline {subsection}{\numberline {1.4}Related Work}{9}
+\contentsline {subsection}{\numberline {1.5}Project Outcome}{10}
+\contentsline {section}{\numberline {2}Preparation}{11}
+\contentsline {subsection}{\numberline {2.1}Starting point}{11}
+\contentsline {subsection}{\numberline {2.2}Requirements analysis}{11}
+\contentsline {subsection}{\numberline {2.3}Preparation strategy outline}{12}
+\contentsline {subsubsection}{\numberline {2.3.1}Project structure}{12}
+\contentsline {subsubsection}{\numberline {2.3.2}Testing}{12}
+\contentsline {subsection}{\numberline {2.4}ISO 7816}{13}
+\contentsline {subsubsection}{\numberline {2.4.1}Application Identifiers}{13}
+\contentsline {subsubsection}{\numberline {2.4.2}APDUs}{13}
+\contentsline {subsection}{\numberline {2.5}Development Preparation}{14}
+\contentsline {subsubsection}{\numberline {2.5.1}Java Card 2.2.2 Build process}{14}
+\contentsline {subsubsection}{\numberline {2.5.2}Differences in Java Card 3.0.4 Build Process}{15}
+\contentsline {subsubsection}{\numberline {2.5.3}Uploading and running applets}{15}
+\contentsline {subsubsection}{\numberline {2.5.4}Practice}{16}
+\contentsline {subsection}{\numberline {2.6}Host to Card interface}{17}
+\contentsline {subsubsection}{\numberline {2.6.1}OpenCard Framework}{17}
+\contentsline {subsubsection}{\numberline {2.6.2}PC/SC}{17}
+\contentsline {section}{\numberline {3}Implementation}{18}
+\contentsline {subsection}{\numberline {3.1}Chosen Protocol - opacity ZKM}{18}
+\contentsline {subsubsection}{\numberline {3.1.1}Brief overview}{18}
+\contentsline {subsubsection}{\numberline {3.1.2}Elliptic Curve Cryptography}{18}
+\contentsline {subsubsection}{\numberline {3.1.3}ECDSA}{19}
+\contentsline {subsubsection}{\numberline {3.1.4}ASN1}{19}
+\contentsline {subsubsection}{\numberline {3.1.5}Elliptic-Curve Diffie Hellman key exchange}{20}
+\contentsline {subsubsection}{\numberline {3.1.6}Key derivation}{21}
+\contentsline {subsubsection}{\numberline {3.1.7}CMAC}{21}
+\contentsline {subsection}{\numberline {3.2}Java Card Protocol Implementation}{22}
+\contentsline {subsubsection}{\numberline {3.2.1}Program structure}{22}
+\contentsline {subsubsection}{\numberline {3.2.2}Java Card C-MAC Implementation}{22}
+\contentsline {subsubsection}{\numberline {3.2.3}Java Card EC-DH Implementation}{22}
+\contentsline {subsection}{\numberline {3.3}Host-side Implementation}{23}
+\contentsline {subsection}{\numberline {3.4}Certificate issuing}{23}
+\contentsline {subsubsection}{\numberline {3.4.1}Certificate structure}{24}
+\contentsline {subsubsection}{\numberline {3.4.2}Certificate generation}{24}
+\contentsline {subsection}{\numberline {3.5}Authorisation Options}{25}
+\contentsline {subsubsection}{\numberline {3.5.1}Multiple root keys and Issuer Identification Numbers}{25}
+\contentsline {subsubsection}{\numberline {3.5.2}GUID}{26}
+\contentsline {subsubsection}{\numberline {3.5.3}Card ID}{26}
+\contentsline {subsubsection}{\numberline {3.5.4}Public Key}{27}
+\contentsline {subsubsection}{\numberline {3.5.5}Authorisation implementation}{27}
+\contentsline {subsection}{\numberline {3.6}Optimisations}{27}
+\contentsline {subsubsection}{\numberline {3.6.1}Persistent Binding}{27}
+\contentsline {subsubsection}{\numberline {3.6.2}Errors in Persistent Binding specification}{28}
+\contentsline {subsubsection}{\numberline {3.6.3}Other optimisations}{28}
+\contentsline {subsection}{\numberline {3.7}Libraries used in implementation}{29}
+\contentsline {subsection}{\numberline {3.8}Change in versions}{29}
+\contentsline {section}{\numberline {4}Evaluation}{30}
+\contentsline {subsection}{\numberline {4.1}Evaluation of success criteria}{30}
+\contentsline {subsection}{\numberline {4.2}Security analysis}{31}
+\contentsline {subsubsection}{\numberline {4.2.1}Discussion of possible failures}{32}
+\contentsline {subsubsection}{\numberline {4.2.2}PB entry storage}{33}
+\contentsline {subsection}{\numberline {4.3}Timing analysis}{33}
+\contentsline {subsection}{\numberline {4.4}Evaluation of Implementation Decisions}{33}
+\contentsline {subsubsection}{\numberline {4.4.1}Choice of languages and developing environment}{33}
+\contentsline {subsubsection}{\numberline {4.4.2}Choice of protocol}{34}
+\contentsline {subsubsection}{\numberline {4.4.3}Certificate issuing and authorisation}{34}
+\contentsline {section}{\numberline {5}Conclusions}{35}
+\contentsline {subsection}{\numberline {5.1}Achievements}{35}
+\contentsline {subsection}{\numberline {5.2}Knowledge and Experience Gained}{35}
+\contentsline {subsection}{\numberline {5.3}What would have been done differently}{35}
+\contentsline {subsection}{\numberline {5.4}Future work}{36}
+\contentsline {section}{\numberline {A}CVC format}{37}
+\contentsline {section}{\numberline {B}MIFARE Classic problems}{39}
+\contentsline {subsection}{\numberline {B.1}Attacks}{39}
+\contentsline {subsection}{\numberline {B.2}Problems with successors}{40}
+\contentsline {section}{\numberline {C}C-MAC explanation}{41}
+\contentsline {section}{\numberline {D}Partial Java Card C-MAC code}{43}
+\contentsline {section}{\numberline {E}Timing tables}{45}
+\contentsline {subsection}{\numberline {E.1}Initial implementation}{45}
+\contentsline {subsection}{\numberline {E.2}After optimisations}{46}

@@ -1,10 +1,15 @@
-import PBStore
+import base64
 
 
-store = PBStore.Store('store.xml')
-a = 2000
-b = 3000
-store.addRecord(4, a.to_bytes((a.bit_length() // 8) + 1, byteorder='big'))
-store.addRecord(5, b.to_bytes((b.bit_length() // 8) + 1, byteorder='big'))
+testarr = [23, 5, 23, 66, 32, 126, 81, 181]
+b = bytes(testarr)
 
-print(store.getSecret(4))
+print(b)
+
+s = b.decode(errors='surrogateescape')
+print(type(s))
+
+b2 = s.encode(errors='surrogateescape')
+print(type(b2))
+print(b2)
+print(i for i in b2)
